@@ -1,0 +1,15 @@
+# --- Core runtime ---
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# --- LangGraph / LangChain ---
+langgraph>=0.0.40
+langchain-core>=0.1.0
+
+# --- Google APIs (Gmail + Calendar, read-only) ---
+google-api-python-client>=2.110.0
+google-auth>=2.23.0
+google-auth-oauthlib>=1.1.0
+
+# --- Utilities ---
+python-dateutil>=2.8.2
