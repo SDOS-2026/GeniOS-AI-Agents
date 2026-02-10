@@ -1,37 +1,38 @@
 # app/utils/google_creds.py
 
 import os
+import pickle
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+
+SCOPES = [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/calendar.readonly",
+]
+
+TOKEN_FILE = "token.pickle"
+CLIENT_SECRET_FILE = "credentials.json"
 
 
 def load_google_credentials() -> Credentials:
-    """
-    Loads Google OAuth credentials from environment variables.
-    Uses refresh token to obtain access tokens automatically.
-    """
+    creds = None
 
-    client_id = os.getenv("GOOGLE_CLIENT_ID")
-    client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-    refresh_token = os.getenv("GOOGLE_REFRESH_TOKEN")
-    token_uri = os.getenv(
-        "GOOGLE_TOKEN_URI",
-        "https://oauth2.googleapis.com/token"
-    )
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, "rb") as f:
+            creds = pickle.load(f)
 
-    if not all([client_id, client_secret, refresh_token]):
-        raise RuntimeError(
-            "Missing Google OAuth environment variables. "
-            "Check .env configuration."
-        )
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                CLIENT_SECRET_FILE,
+                SCOPES,
+            )
+            creds = flow.run_local_server(port=0)
 
-    return Credentials(
-        None,  # access token fetched automatically
-        refresh_token=refresh_token,
-        token_uri=token_uri,
-        client_id=client_id,
-        client_secret=client_secret,
-        scopes=[
-            "https://www.googleapis.com/auth/gmail.readonly",
-            "https://www.googleapis.com/auth/calendar.readonly",
-        ],
-    )
+        with open(TOKEN_FILE, "wb") as f:
+            pickle.dump(creds, f)
+
+    return creds

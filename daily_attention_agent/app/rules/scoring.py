@@ -26,6 +26,14 @@ def score_signals(
     Applies deterministic rules to all unified signals.
     Returns scored items with reasons.
     """
+    # print(f"[DEBUG] Scoring {len(unified_signals)} signals")
+    # for s in unified_signals:
+    #     print(
+    #         "  -",
+    #         s.signal_type,
+    #         "|",
+    #         s.title,
+    #     )
     scored_items: List[Dict[str, Any]] = []
 
     for signal in unified_signals:
@@ -58,5 +66,15 @@ def score_signals(
 
     # Sort highest priority first
     scored_items.sort(key=lambda x: x["priority_score"], reverse=True)
-
+    # print(f"[DEBUG] Scored items: {len(scored_items)}")
+    # for item in scored_items:
+    #     print(
+    #         "  -",
+    #         item["signal"].signal_type,
+    #         "|",
+    #         item["signal"].title,
+    #         "| score:",
+    #         item["priority_score"],
+    #     )
+    
     return scored_items

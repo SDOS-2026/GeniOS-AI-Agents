@@ -1,7 +1,7 @@
 # app/rules/email_rules.py
 
 from typing import List, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.models.unified_signal import UnifiedSignal
 
@@ -42,7 +42,8 @@ def apply_email_rules(
             break
 
     # 4. Staleness
-    age_hours = (datetime.utcnow() - signal.timestamp).total_seconds() / 3600
+    now_utc = datetime.now(timezone.utc)
+    age_hours = (now_utc - signal.timestamp).total_seconds() / 3600
     if age_hours > 24:
         score += 10
         reasons.append("Email pending for over 24 hours")

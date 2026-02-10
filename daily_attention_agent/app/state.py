@@ -3,6 +3,7 @@
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
+from app.models.unified_signal import UnifiedSignal
 
 
 class DAAState(BaseModel):
@@ -47,7 +48,7 @@ class DAAState(BaseModel):
     )
 
     raw_signals: List[Dict[str, Any]] = Field(default_factory=list)
-    unified_signals: List[Dict[str, Any]] = Field(default_factory=list)
+    unified_signals: List[UnifiedSignal] = Field(default_factory=list)
 
     scored_items: List[Dict[str, Any]] = Field(
         default_factory=list,

@@ -26,6 +26,16 @@ def normalize_signals(state: DAAState) -> DAAState:
 
     if not unified:
         state.warnings.append("No signals normalized from fetched data")
+    # print(f"[DEBUG] Unified signals count: {len(unified)}")
+    # for u in unified:
+    #     print(
+    #         "  -",
+    #         u.signal_type,
+    #         "|",
+    #         u.source_tool,
+    #         "|",
+    #         u.title,
+    #     )
 
     state.unified_signals = unified
     return state

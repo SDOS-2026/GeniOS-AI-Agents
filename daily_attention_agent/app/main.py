@@ -58,17 +58,19 @@ def run_daily_attention_agent(
 
     # ---------- Run Graph ----------
     graph = build_graph()
-    final_state: DAAState = graph.invoke(state)
+    final_state = graph.invoke(state)
 
     return {
-        "attention_items": final_state.attention_items,
-        "risks": final_state.risks,
-        "opportunities": final_state.opportunities,
-        "warnings": final_state.warnings,
-        "run_started_at": final_state.run_started_at.isoformat(),
-        "run_completed_at": final_state.run_completed_at.isoformat()
-        if final_state.run_completed_at
-        else None,
+        "attention_items": final_state["attention_items"],
+        "risks": final_state["risks"],
+        "opportunities": final_state["opportunities"],
+        "warnings": final_state["warnings"],
+        "run_started_at": final_state["run_started_at"].isoformat(),
+        "run_completed_at": (
+            final_state["run_completed_at"].isoformat()
+            if final_state["run_completed_at"]
+            else None
+        ),
     }
 
 
@@ -81,5 +83,35 @@ if __name__ == "__main__":
     )
 
     print("\n=== DAILY ATTENTION BRIEF ===\n")
+
+    emails = []
+    events = []
+
     for item in output["attention_items"]:
-        print(f"- [{item['priority_level'].upper()}] {item['title']}")
+        if item["type"] == "email":
+            emails.append(item)
+        elif item["type"] == "meeting":
+            events.append(item)
+
+    # ---------- Emails ----------
+    print("-- Email --")
+    if not emails:
+        print("(none)")
+    else:
+        for item in emails:
+            print(
+                f"- [{item['priority_level'].upper()}] {item['title']}"
+            )
+
+    print()
+
+    # ---------- Calendar Events ----------
+    print("-- Events --")
+    if not events:
+        print("(none)")
+    else:
+        for item in events:
+            print(
+                f"- [{item['priority_level'].upper()}] {item['title']}"
+            )
+

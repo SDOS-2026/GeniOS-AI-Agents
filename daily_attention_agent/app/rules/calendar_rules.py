@@ -1,7 +1,7 @@
 # app/rules/calendar_rules.py
 
 from typing import List, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.models.unified_signal import UnifiedSignal
 
@@ -17,7 +17,8 @@ def apply_calendar_rules(signal: UnifiedSignal) -> Tuple[float, List[str]]:
     meta = signal.raw_metadata
 
     # 1. Meeting starting soon
-    hours_until = (signal.timestamp - datetime.utcnow()).total_seconds() / 3600
+    now_utc = datetime.now(timezone.utc)
+    hours_until = (signal.timestamp - now_utc).total_seconds() / 3600
     if 0 <= hours_until <= 2:
         score += 30
         reasons.append("Meeting starting within 2 hours")

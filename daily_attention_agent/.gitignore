@@ -2,9 +2,11 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.python-version
 
 # Virtual environment
 venv/
+.venv/
 .env
 
 # Google OAuth / secrets
@@ -18,3 +20,4 @@ token.pickle
 .vscode/
 credentials.json
 
+MY/
