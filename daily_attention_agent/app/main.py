@@ -6,9 +6,11 @@ from typing import Dict, Any
 from app.state import DAAState
 from app.graph import build_graph
 from app.utils.google_creds import load_google_credentials
-
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
+
 load_dotenv()
+IST = ZoneInfo("Asia/Kolkata")
 
 
 def run_daily_attention_agent(
@@ -31,7 +33,7 @@ def run_daily_attention_agent(
     google_creds = load_google_credentials()
 
     # ---------- Time Window ----------
-    now = datetime.now(timezone.utc)
+    now = datetime.now(IST)
 
     time_window = {
         "start": now - timedelta(days=3),
@@ -79,7 +81,7 @@ if __name__ == "__main__":
         user_id="user_123",
         workspace_id="workspace_123",
         vip_senders=["ceo@company.com"],
-        keywords=["urgent", "approval", "deadline"],
+        keywords=["urgent", "approval", "deadline", "exam", "QUIZ"],
     )
 
     print("\n=== DAILY ATTENTION BRIEF ===\n")
@@ -99,8 +101,11 @@ if __name__ == "__main__":
         print("(none)")
     else:
         for item in emails:
+            ts = item["evidence"]["timestamp"]  # already datetime
+            email_time = ts.astimezone(IST).strftime("%d %b %H:%M")
+
             print(
-                f"- [{item['priority_level'].upper()}] {item['title']}"
+                f"- [{item['priority_level'].upper()}] [{email_time}] {item['title']}"
             )
 
     print()
@@ -111,7 +116,9 @@ if __name__ == "__main__":
         print("(none)")
     else:
         for item in events:
-            print(
-                f"- [{item['priority_level'].upper()}] {item['title']}"
-            )
+            ts = item["evidence"]["timestamp"]  # already datetime
+            event_time = ts.astimezone(IST).strftime("%d %b %H:%M")
 
+            print(
+                f"- [{item['priority_level'].upper()}] [{event_time}] {item['title']}"
+            )
