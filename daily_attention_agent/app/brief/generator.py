@@ -23,6 +23,8 @@ def generate_brief(state: DAAState) -> DAAState:
         level = item["priority_level"]
         reasons = item["reasons"]
 
+        calendar_name = signal.raw_metadata.get("calendar_name", "Calendar")
+
         # ---------- Map signal → attention type ----------
         if signal.signal_type == "EMAIL_THREAD":
             item_type = "email"
@@ -36,7 +38,7 @@ def generate_brief(state: DAAState) -> DAAState:
             tool=signal.source_tool,
             record_id=signal.record_id,
             timestamp=signal.timestamp,
-            snippet=signal.snippet,
+            snippet=f"[{calendar_name}] {signal.snippet}",
         )
 
         attention_item = AttentionItem(
@@ -52,7 +54,7 @@ def generate_brief(state: DAAState) -> DAAState:
 
         attention_items.append(attention_item)
 
-        # ---------- Risks (V1: simple heuristic) ----------
+        # ---------- Risks ----------
         if level in ("high", "critical"):
             risks.append({
                 "title": signal.title,
@@ -60,20 +62,18 @@ def generate_brief(state: DAAState) -> DAAState:
                 "tool": signal.source_tool,
             })
 
-        # ---------- Opportunities (V1: soft signal) ----------
-        if signal.signal_type == "EMAIL_THREAD" and score >= 25 and score < 50:
+        # ---------- Opportunities ----------
+        if signal.signal_type == "EMAIL_THREAD" and 25 <= score < 50:
             opportunities.append({
                 "title": signal.title,
                 "suggestion": "Quick response could unblock progress",
             })
 
-    # Sort again defensively
     attention_items.sort(
         key=lambda x: x.priority_score,
         reverse=True
     )
 
-    # ---------- Attach to state ----------
     state.attention_items = [item.dict() for item in attention_items]
     state.risks = risks
     state.opportunities = opportunities
@@ -82,9 +82,6 @@ def generate_brief(state: DAAState) -> DAAState:
 
 
 def _confidence_from_score(score: float) -> float:
-    """
-    Simple, explainable confidence mapping.
-    """
     if score >= 80:
         return 0.95
     if score >= 50:

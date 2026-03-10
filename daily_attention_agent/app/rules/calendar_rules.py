@@ -1,42 +1,70 @@
-# app/rules/calendar_rules.py
-
 from typing import List, Tuple
 from datetime import datetime, timezone
 
 from app.models.unified_signal import UnifiedSignal
+from app.llm.client import gemini_calendar_batch_priority
 
 
-def apply_calendar_rules(signal: UnifiedSignal) -> Tuple[float, List[str]]:
-    """
-    Deterministic calendar scoring rules.
-    Returns (score_delta, reasons)
-    """
-    score = 0.0
-    reasons: List[str] = []
+def rule_based_fallback(signal: UnifiedSignal):
+
+    score = 0
+    reasons = []
 
     meta = signal.raw_metadata
 
-    # 1. Meeting starting soon
     now_utc = datetime.now(timezone.utc)
     hours_until = (signal.timestamp - now_utc).total_seconds() / 3600
+
     if 0 <= hours_until <= 2:
         score += 30
-        reasons.append("Meeting starting within 2 hours")
+        reasons.append("Meeting starting soon")
 
-    # 2. Missing meeting link
     if not meta.get("has_meet_link", True):
         score += 20
-        reasons.append("Meeting missing video / location link")
+        reasons.append("Missing meeting link")
 
-    # 3. No description / agenda
     if not signal.snippet or signal.snippet == "No description provided":
         score += 15
-        reasons.append("Meeting has no agenda or notes")
+        reasons.append("No agenda")
 
-    # 4. Multiple attendees (higher coordination risk)
-    attendee_count = meta.get("attendee_count", 0)
-    if attendee_count >= 3:
+    if meta.get("attendee_count", 0) >= 3:
         score += 10
-        reasons.append("Meeting involves multiple attendees")
+        reasons.append("Multiple attendees")
 
     return score, reasons
+
+
+def apply_calendar_batch(signals):
+
+    try:
+        results = gemini_calendar_batch_priority(signals)
+
+        for s in signals:
+
+            r = results.get(s.record_id)
+
+            if r is None:
+                # fallback only if Gemini did not return this event
+                score, reasons = rule_based_fallback(s)
+                meta = s.raw_metadata
+                meta["llm_score"] = score
+                meta["llm_reasons"] = reasons
+                continue
+
+            meta = s.raw_metadata
+            meta["llm_score"] = float(r["score"])
+            meta["llm_reasons"] = r["reasons"]
+            meta["category"] = r.get("category")
+
+    except Exception as e:
+
+        print("\n====== GEMINI ERROR ======")
+        print(e)
+        print("==========================\n")
+
+        # fallback for API failure
+        for s in signals:
+            score, reasons = rule_based_fallback(s)
+            meta = s.raw_metadata
+            meta["llm_score"] = score
+            meta["llm_reasons"] = reasons
