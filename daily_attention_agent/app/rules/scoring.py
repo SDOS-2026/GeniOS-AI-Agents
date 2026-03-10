@@ -63,7 +63,7 @@ def score_signals(
         elif signal.signal_type == "CALENDAR_EVENT":
             # print(signal.raw_metadata)
             meta = signal.raw_metadata
-            print("DEBUG CAL:", signal.title, meta.get("llm_score"))
+            # print("DEBUG CAL:", signal.title, meta.get("llm_score"))
             # print(
             #     "DEBUG CAL:",
             #     signal.title,

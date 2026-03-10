@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
+from zoneinfo import ZoneInfo
 
 from app.state import DAAState
 from app.graph import build_graph
@@ -91,31 +92,36 @@ if __name__ == "__main__":
                     f"- [{item['priority_level'].upper()}] [{email_time}] {item['title']}"
                 )
 
-            print("\n-- Events --")
+        print("\n-- Events --")
 
-            if not events:
+        if not events:
+            print("(none)")
+        else:
+            
+            for item in events:
+
+                ts = item["evidence"]["timestamp"]
+                event_time = ts.astimezone(IST).strftime("%d %b %H:%M")
+
+                priority = item["priority_level"].upper()
+
+                snippet = item["evidence"]["snippet"]
+                calendar_name = snippet.split("]")[0].strip("[") if snippet.startswith("[") else ""
+
+                print(f"\n[{priority}] {event_time}  {item['title']} ({calendar_name})")
+
+                for r in item["why_flagged"]:
+                    print(f"   reason: {r}")
+
+                print(f"   action: {item['recommended_action']}")
+            
+            print("\n-- Risks --")
+
+            if not state.risks:
                 print("(none)")
             else:
-
-                max_priority = max(len(item["priority_level"]) for item in events)
-                max_calendar = max(
-                    len(item["evidence"]["snippet"].split("]")[0].strip("[")) for item in events
-                )
-
-                for item in events:
-                    ts = item["evidence"]["timestamp"]
-                    event_time = ts.astimezone(IST).strftime("%d %b %H:%M")
-
-                    priority = item["priority_level"].upper()
-
-                    calendar_name = item["evidence"]["snippet"].split("]")[0].strip("[")
-
-                    print(
-                        f"- [{priority:^{max_priority}}] "
-                        f"[{event_time}] "
-                        f"[{calendar_name:^{max_calendar}}] "
-                        f"{item['title']}"
-                    )
+                for r in state.risks:
+                    print(f"- {r['title']}: {r['reason']}")
 
         again = input("\nRun again? (y/n): ").strip().lower()
 

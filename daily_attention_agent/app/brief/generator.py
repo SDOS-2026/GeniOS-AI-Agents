@@ -3,6 +3,7 @@
 from typing import List, Dict, Any
 from datetime import datetime
 
+from app.rules.calendar_rules import detect_calendar_risks
 from app.state import DAAState
 from app.models.attention_item import AttentionItem, Evidence
 
@@ -28,12 +29,24 @@ def generate_brief(state: DAAState) -> DAAState:
         # ---------- Map signal → attention type ----------
         if signal.signal_type == "EMAIL_THREAD":
             item_type = "email"
-            recommended_action = "Review and respond to this email"
-        else:
-            item_type = "meeting"
-            recommended_action = "Prepare for this meeting"
+            recommended_action = "Review and respond if needed"
 
-        # ---------- Evidence (mandatory) ----------
+        elif signal.signal_type == "CALENDAR_EVENT":
+
+            item_type = "meeting"
+
+            if score >= 80:
+                recommended_action = "Prepare in advance"
+            elif score >= 40:
+                recommended_action = "Check details before attending"
+            else:
+                recommended_action = "Attend if relevant"
+
+        else:
+            item_type = "event"
+            recommended_action = "Check details"
+
+        # ---------- Evidence ----------
         evidence = Evidence(
             tool=signal.source_tool,
             record_id=signal.record_id,
@@ -54,7 +67,7 @@ def generate_brief(state: DAAState) -> DAAState:
 
         attention_items.append(attention_item)
 
-        # ---------- Risks ----------
+        # ---------- Risks (priority-based) ----------
         if level in ("high", "critical"):
             risks.append({
                 "title": signal.title,
@@ -69,11 +82,23 @@ def generate_brief(state: DAAState) -> DAAState:
                 "suggestion": "Quick response could unblock progress",
             })
 
+    # ---------- Calendar structural risk analysis ----------
+    calendar_signals = [
+        item["signal"]
+        for item in state.scored_items
+        if item["signal"].signal_type == "CALENDAR_EVENT"
+    ]
+
+    calendar_risks = detect_calendar_risks(calendar_signals)
+    risks.extend(calendar_risks)
+
+    # ---------- Sort attention items ----------
     attention_items.sort(
         key=lambda x: x.priority_score,
         reverse=True
     )
 
+    # ---------- Attach to state ----------
     state.attention_items = [item.dict() for item in attention_items]
     state.risks = risks
     state.opportunities = opportunities

@@ -3,7 +3,67 @@ from datetime import datetime, timezone
 
 from app.models.unified_signal import UnifiedSignal
 from app.llm.client import gemini_calendar_batch_priority
+from datetime import timedelta
 
+
+def detect_calendar_risks(signals):
+    """
+    Analyze calendar signals for conflicts, overload, and missing info.
+    Returns list of risk dicts.
+    """
+
+    risks = []
+
+    events = sorted(signals, key=lambda s: s.timestamp)
+
+    # ---------- Conflict detection ----------
+    for i in range(len(events) - 1):
+        a = events[i]
+        b = events[i + 1]
+
+        if abs((b.timestamp - a.timestamp).total_seconds()) < 3600:
+            risks.append({
+                "title": "Calendar conflict",
+                "reason": f"{a.title} overlaps with {b.title}",
+                "tool": "calendar",
+            })
+
+    # ---------- Back-to-back overload ----------
+    consecutive = 1
+    for i in range(len(events) - 1):
+        diff = (events[i + 1].timestamp - events[i].timestamp)
+
+        if diff <= timedelta(minutes=5):
+            consecutive += 1
+        else:
+            consecutive = 1
+
+        if consecutive >= 3:
+            risks.append({
+                "title": "Meeting overload",
+                "reason": f"{consecutive} meetings scheduled back-to-back",
+                "tool": "calendar",
+            })
+
+    # ---------- Missing link ----------
+    for e in events:
+        if not e.raw_metadata.get("has_meet_link", True):
+            risks.append({
+                "title": e.title,
+                "reason": "Meeting has no join link or location",
+                "tool": "calendar",
+            })
+
+    # ---------- Missing agenda ----------
+    for e in events:
+        if not e.snippet or e.snippet == "No description provided":
+            risks.append({
+                "title": e.title,
+                "reason": "Meeting has no agenda or description",
+                "tool": "calendar",
+            })
+
+    return risks
 
 def rule_based_fallback(signal: UnifiedSignal):
 
