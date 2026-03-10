@@ -21,6 +21,7 @@ def score_signals(
     unified_signals: List[UnifiedSignal],
     vip_senders: List[str],
     keywords: List[str],
+    calendar_cache: dict,
 ) -> List[Dict[str, Any]]:
     """
     Applies scoring to unified signals.
@@ -39,7 +40,8 @@ def score_signals(
 
     # --------- STEP 2: Run batch Gemini scoring ----------
     if calendar_signals:
-        apply_calendar_batch(calendar_signals)
+        cache = calendar_cache
+        apply_calendar_batch(calendar_signals,cache)
 
     # --------- STEP 3: Score signals ----------
     for signal in unified_signals:

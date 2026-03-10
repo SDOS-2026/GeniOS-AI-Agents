@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 from zoneinfo import ZoneInfo
-
+import json
+from pathlib import Path
 from app.state import DAAState
 from app.graph import build_graph
 from app.utils.google_creds import load_google_credentials
@@ -10,11 +11,43 @@ from dotenv import load_dotenv
 load_dotenv()
 
 IST = ZoneInfo("Asia/Kolkata")
-
-calendar_llm_cache = {}
-
+CACHE_FILE = Path("calendar_llm_cache.json")
+if CACHE_FILE.exists():
+    with open(CACHE_FILE, "r") as f:
+        calendar_llm_cache = json.load(f)
+    print("[DEBUG] Calendar cache size:", len(calendar_llm_cache))
+    
+else:
+    calendar_llm_cache = {}
 # ---- Runtime settings ----
 SHOW_LOW_CALENDAR_EVENTS = True
+
+def clean_calendar_cache(cache):
+    """
+    Remove cache entries for events older than 1 day.
+    Prevents cache file from growing forever.
+    """
+
+    now = datetime.now(timezone.utc)
+    keep = {}
+
+    for event_id, data in cache.items():
+
+        # try to parse timestamp from event_id
+        try:
+            if "_" in event_id:
+                ts = event_id.split("_")[-1]
+                event_time = datetime.strptime(ts, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+
+                if event_time + timedelta(days=1) > now:
+                    keep[event_id] = data
+            else:
+                keep[event_id] = data
+
+        except Exception:
+            keep[event_id] = data
+
+    return keep
 
 def run_daily_attention_agent(
     user_id: str,
@@ -55,6 +88,8 @@ def run_daily_attention_agent(
     }
 
     graph = build_graph()
+    # print("main cache id:", id(calendar_llm_cache))
+    # print("state cache id:", id(state["raw_metadata"]["calendar_llm_cache"]))
     final_state = graph.invoke(state)
 
     return final_state
@@ -146,6 +181,19 @@ if __name__ == "__main__":
 
                 print(f"   • {count} routine events from calendars: {cal_list}")
 
+        cache = state["raw_metadata"].get("calendar_llm_cache", {})
+
+        cleaned = clean_calendar_cache(cache)
+
+        cache.clear()
+        cache.update(cleaned)
+
+        if cache:
+            with open(CACHE_FILE, "w") as f:
+                json.dump(cache, f, indent=2)
+
+        print("[DEBUG] Calendar cache size:", len(cache))
+
         cmd = input("\nRun again? (y/n/settings): ").strip().lower()
 
         if cmd == "settings":
@@ -168,3 +216,6 @@ if __name__ == "__main__":
                     break
 
             continue
+        
+        elif cmd != "y":
+            break

@@ -18,13 +18,16 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def gemini_calendar_batch_priority(signals):
+    print("[DEBUG] cal llm start")
     events = []
 
     for s in signals:
         meta = s.raw_metadata
 
+        event_key = f"{s.record_id}_{s.timestamp.isoformat()}"
+
         events.append({
-            "id": s.record_id,
+            "id": event_key,
             "calendar_context": meta.get("calendar_name"),
             "title": s.title,
             "description": s.snippet,
@@ -88,7 +91,7 @@ def gemini_calendar_batch_priority(signals):
 
 
     if "```" in text:
-        text = text.split("```")[1]
+        text = text.split("```")[1].replace("json", "").strip()
 
     text = text.replace("json", "").strip()
 
@@ -96,4 +99,5 @@ def gemini_calendar_batch_priority(signals):
 
     results = {item["id"]: item for item in data}
 
+    print("[DEBUG] cal llm end")    
     return results
