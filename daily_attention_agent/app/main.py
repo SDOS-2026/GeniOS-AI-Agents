@@ -87,11 +87,16 @@ if __name__ == "__main__":
             for item in emails:
                 ts = item["evidence"]["timestamp"]
                 email_time = ts.astimezone(IST).strftime("%d %b %H:%M")
-
-                print(
-                    f"- [{item['priority_level'].upper()}] [{email_time}] {item['title']}"
-                )
-
+                priority = item["priority_level"].upper()
+                print(f"[{priority}] [{email_time}] {item['title']}")
+                if item.get("summary"):
+                    print(f"   summary: {item['summary']}")
+                else:
+                    print("NO summary")
+                if item["priority_level"] in ["medium", "high", "critical"]:
+                    for r in item["why_flagged"]:
+                        print(f"   reason: {r}")
+                    print(f"   action: {item['recommended_action']}")
         print("\n-- Events --")
 
         if not events:

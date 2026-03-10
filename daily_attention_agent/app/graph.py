@@ -15,6 +15,7 @@ from app.guardrails.validate_evidence import validate_evidence
 from app.guardrails.no_side_effects import validate_no_side_effects
 
 from app.llm.drafts import generate_drafts_if_enabled
+from app.llm.email_brief import generate_email_briefs
 from app.connectors.normalize import normalize_signals
 
 
@@ -55,11 +56,33 @@ def rule_scoring(state: DAAState) -> DAAState:
 
 
 def llm_optional(state: DAAState) -> DAAState:
-    """
-    Optional LLM step. Must be skippable without breaking output.
-    """
-    if state.output_mode == "brief_with_drafts":
-        state.drafts = generate_drafts_if_enabled(state)
+
+    emails_for_llm = []
+
+    for item in state.scored_items:
+
+        signal = item["signal"]
+
+        if signal.signal_type != "EMAIL_THREAD":
+            continue
+
+        if item["priority_level"] not in ["medium", "high", "critical"]:
+            continue
+
+        emails_for_llm.append(item)
+
+    if emails_for_llm:
+
+        results = generate_email_briefs(emails_for_llm)
+
+        for item in state.scored_items:
+
+            signal = item["signal"]
+
+            if signal.record_id in results:
+                item["llm_brief"] = results[signal.record_id]["brief"]
+                item["llm_reasoning"] = results[signal.record_id]["reasoning"]
+
     return state
 
 
