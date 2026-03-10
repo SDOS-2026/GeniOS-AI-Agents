@@ -51,7 +51,8 @@ def generate_brief(state: DAAState) -> DAAState:
             tool=signal.source_tool,
             record_id=signal.record_id,
             timestamp=signal.timestamp,
-            snippet=f"[{calendar_name}] {signal.snippet}",
+            snippet=signal.snippet,
+            calendar_name=calendar_name,
         )
 
         attention_item = AttentionItem(

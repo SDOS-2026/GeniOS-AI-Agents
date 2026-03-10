@@ -13,6 +13,8 @@ IST = ZoneInfo("Asia/Kolkata")
 
 calendar_llm_cache = {}
 
+# ---- Runtime settings ----
+SHOW_LOW_CALENDAR_EVENTS = True
 
 def run_daily_attention_agent(
     user_id: str,
@@ -97,16 +99,29 @@ if __name__ == "__main__":
         if not events:
             print("(none)")
         else:
-            
+            events_to_show = []
+            routine_events = []
+
             for item in events:
+
+                if item["priority_level"] == "low":
+
+                    if not SHOW_LOW_CALENDAR_EVENTS:
+                        routine_events.append(item)
+                    else:
+                        events_to_show.append(item)
+
+                else:
+                    events_to_show.append(item)
+                
+            for item in events_to_show:
 
                 ts = item["evidence"]["timestamp"]
                 event_time = ts.astimezone(IST).strftime("%d %b %H:%M")
 
                 priority = item["priority_level"].upper()
 
-                snippet = item["evidence"]["snippet"]
-                calendar_name = snippet.split("]")[0].strip("[") if snippet.startswith("[") else ""
+                calendar_name = item["evidence"].get("calendar_name", "")
 
                 print(f"\n[{priority}] {event_time}  {item['title']} ({calendar_name})")
 
@@ -115,15 +130,41 @@ if __name__ == "__main__":
 
                 print(f"   action: {item['recommended_action']}")
             
-            print("\n-- Risks --")
+            if not SHOW_LOW_CALENDAR_EVENTS and routine_events:
 
-            if not state.risks:
-                print("(none)")
-            else:
-                for r in state.risks:
-                    print(f"- {r['title']}: {r['reason']}")
+                print("\nRoutine schedule:")
 
-        again = input("\nRun again? (y/n): ").strip().lower()
+                count = len(routine_events)
 
-        if again != "y":
-            break
+                calendars = set()
+
+                for e in routine_events:
+                    cal = e["evidence"].get("calendar_name", "")
+                    calendars.add(cal)
+
+                cal_list = ", ".join(calendars)
+
+                print(f"   • {count} routine events from calendars: {cal_list}")
+
+        cmd = input("\nRun again? (y/n/settings): ").strip().lower()
+
+        if cmd == "settings":
+
+            while True:
+
+                print("\nSettings")
+                print("1. Toggle LOW calendar events")
+                print("2. Back")
+
+                s = input("Choice: ").strip()
+
+                if s == "1":
+                    SHOW_LOW_CALENDAR_EVENTS = not SHOW_LOW_CALENDAR_EVENTS
+
+                    state = "ON" if SHOW_LOW_CALENDAR_EVENTS else "OFF"
+                    print(f"\nShow LOW priority calendar events: {state}")
+
+                elif s == "2":
+                    break
+
+            continue

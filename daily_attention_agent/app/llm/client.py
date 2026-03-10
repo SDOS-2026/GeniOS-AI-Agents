@@ -82,9 +82,9 @@ def gemini_calendar_batch_priority(signals):
     text = response.text.strip()
 
     # DEBUG: show raw Gemini output
-    print("\n====== GEMINI RAW RESPONSE ======")
-    print(text)
-    print("=================================\n")
+    # print("\n====== GEMINI RAW RESPONSE ======")
+    # print(text)
+    # print("=================================\n")
 
 
     if "```" in text:

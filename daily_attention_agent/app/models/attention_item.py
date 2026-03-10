@@ -10,14 +10,11 @@ PriorityLevel = Literal["low", "medium", "high", "critical"]
 
 
 class Evidence(BaseModel):
-    """
-    Mandatory evidence backing every attention item.
-    """
-    tool: Literal["gmail", "calendar"]
+    tool: str
     record_id: str
     timestamp: datetime
     snippet: str
-
+    calendar_name: str | None = None
 
 class AttentionItem(BaseModel):
     """
