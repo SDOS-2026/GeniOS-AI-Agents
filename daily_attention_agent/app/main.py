@@ -6,8 +6,9 @@ from pathlib import Path
 from app.state import DAAState
 from app.graph import build_graph
 from app.utils.google_creds import load_google_credentials
-
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
+
 load_dotenv()
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -63,6 +64,7 @@ def run_daily_attention_agent(
 
     google_creds = load_google_credentials()
 
+    # ---------- Time Window ----------
     now = datetime.now(IST)
 
     time_window = {
