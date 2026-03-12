@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
 load_dotenv()
+IST = ZoneInfo("Asia/Kolkata")
 
 IST = ZoneInfo("Asia/Kolkata")
 CACHE_FILE = Path("calendar_llm_cache.json")
