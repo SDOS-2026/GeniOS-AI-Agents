@@ -3,6 +3,7 @@
 from typing import List, Dict, Any
 from datetime import datetime
 
+from app.rules.calendar_rules import detect_calendar_risks
 from app.state import DAAState
 from app.models.attention_item import AttentionItem, Evidence
 
@@ -23,20 +24,34 @@ def generate_brief(state: DAAState) -> DAAState:
         level = item["priority_level"]
         reasons = item["reasons"]
 
+        calendar_name = signal.raw_metadata.get("calendar_name", "Calendar")
+
         # ---------- Map signal → attention type ----------
         if signal.signal_type == "EMAIL_THREAD":
             item_type = "email"
-            recommended_action = "Review and respond to this email"
-        else:
-            item_type = "meeting"
-            recommended_action = "Prepare for this meeting"
+            recommended_action = "Review and respond if needed"
 
-        # ---------- Evidence (mandatory) ----------
+        elif signal.signal_type == "CALENDAR_EVENT":
+
+            item_type = "meeting"
+
+            if score >= 80:
+                recommended_action = "Prepare in advance"
+            elif score >= 40:
+                recommended_action = "Check details before attending"
+            else:
+                recommended_action = "Attend if relevant"
+
+        else:
+            item_type = "event"
+            recommended_action = "Check details"
+
+        # ---------- Evidence ----------
         evidence = Evidence(
             tool=signal.source_tool,
             record_id=signal.record_id,
             timestamp=signal.timestamp,
-            snippet=signal.snippet,
+            snippet=f"[{calendar_name}] {signal.snippet}",
         )
 
         attention_item = AttentionItem(
@@ -52,7 +67,7 @@ def generate_brief(state: DAAState) -> DAAState:
 
         attention_items.append(attention_item)
 
-        # ---------- Risks (V1: simple heuristic) ----------
+        # ---------- Risks (priority-based) ----------
         if level in ("high", "critical"):
             risks.append({
                 "title": signal.title,
@@ -60,14 +75,24 @@ def generate_brief(state: DAAState) -> DAAState:
                 "tool": signal.source_tool,
             })
 
-        # ---------- Opportunities (V1: soft signal) ----------
-        if signal.signal_type == "EMAIL_THREAD" and score >= 25 and score < 50:
+        # ---------- Opportunities ----------
+        if signal.signal_type == "EMAIL_THREAD" and 25 <= score < 50:
             opportunities.append({
                 "title": signal.title,
                 "suggestion": "Quick response could unblock progress",
             })
 
-    # Sort again defensively
+    # ---------- Calendar structural risk analysis ----------
+    calendar_signals = [
+        item["signal"]
+        for item in state.scored_items
+        if item["signal"].signal_type == "CALENDAR_EVENT"
+    ]
+
+    calendar_risks = detect_calendar_risks(calendar_signals)
+    risks.extend(calendar_risks)
+
+    # ---------- Sort attention items ----------
     attention_items.sort(
         key=lambda x: x.priority_score,
         reverse=True
@@ -82,9 +107,6 @@ def generate_brief(state: DAAState) -> DAAState:
 
 
 def _confidence_from_score(score: float) -> float:
-    """
-    Simple, explainable confidence mapping.
-    """
     if score >= 80:
         return 0.95
     if score >= 50:

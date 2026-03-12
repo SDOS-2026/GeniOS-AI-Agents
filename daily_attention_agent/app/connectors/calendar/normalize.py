@@ -67,7 +67,10 @@ def normalize_calendar_events(raw_events: List[dict]) -> List[UnifiedSignal]:
                 "attendee_count": len(attendees),
                 "has_meet_link": has_meet_link,
                 "is_all_day": "date" in event.get("start", {}),
-            },
+                "calendar_name": event.get("_calendar_name"),
+                "calendar_id": event.get("_calendar_id"),
+                "llm_cached": False,
+            }
         )
 
         signals.append(signal)

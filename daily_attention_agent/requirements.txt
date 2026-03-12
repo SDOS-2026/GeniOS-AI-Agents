@@ -13,3 +13,6 @@ google-auth-oauthlib>=1.1.0
 
 # --- Utilities ---
 python-dateutil>=2.8.2
+
+# Gemini / Google GenAI
+google-genai==1.59.0
