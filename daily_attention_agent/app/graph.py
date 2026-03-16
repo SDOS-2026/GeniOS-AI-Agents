@@ -27,14 +27,18 @@ def fetch_signals(state: DAAState) -> DAAState:
     NO LLM. NO SCORING.
     """
     if "gmail" in state.connected_tools:
+        print("[DEBUG] gmail fetch start")
         state.raw_signals.extend(
             fetch_gmail_signals(state)
         )
+        print("[DEBUG] gmail fetch end")
 
     if "calendar" in state.connected_tools:
+        print("[DEBUG] cal fetch start")
         state.raw_signals.extend(
             fetch_calendar_signals(state)
         )
+        print("[DEBUG] cal fetch end")
 
     if not state.raw_signals:
         state.warnings.append("No signals fetched from connected tools")
@@ -50,6 +54,7 @@ def rule_scoring(state: DAAState) -> DAAState:
         unified_signals=state.unified_signals,
         vip_senders=state.vip_senders,
         keywords=state.keywords,
+        calendar_cache=state.raw_metadata.setdefault("calendar_llm_cache", {})
     )
     return state
 

@@ -93,28 +93,79 @@ def rule_based_fallback(signal: UnifiedSignal):
 
     return score, reasons
 
+def apply_calendar_batch(signals, cache):
 
-def apply_calendar_batch(signals):
 
-    try:
-        results = gemini_calendar_batch_priority(signals)
 
-        for s in signals:
+    if not signals:
+        return
 
-            r = results.get(s.record_id)
 
-            if r is None:
-                # fallback only if Gemini did not return this event
-                score, reasons = rule_based_fallback(s)
-                meta = s.raw_metadata
-                meta["llm_score"] = score
-                meta["llm_reasons"] = reasons
-                continue
+    uncached_signals = []
+
+    # ---------- Check cache first ----------
+    for s in signals:
+
+        cache_key = f"{s.record_id}_{s.timestamp.isoformat()}"
+        # print("[DEBUG] LOOKUP KEY:", cache_key)
+        # print("[DEBUG] CACHE KEYS SAMPLE:", list(cache.keys())[:3])
+        if cache_key in cache:
+
+            cached = cache[cache_key]
 
             meta = s.raw_metadata
-            meta["llm_score"] = float(r["score"])
-            meta["llm_reasons"] = r["reasons"]
-            meta["category"] = r.get("category")
+            meta["llm_score"] = cached["score"]
+            meta["llm_reasons"] = cached["reasons"]
+            meta["category"] = cached.get("category")
+            meta["llm_cached"] = True
+
+        else:
+            uncached_signals.append(s)
+
+    if not uncached_signals:
+        print("[DEBUG] All cal events loaded from cache")
+        return
+
+    try:
+        results = gemini_calendar_batch_priority(uncached_signals)
+
+        for s in uncached_signals:
+
+            cache_key = f"{s.record_id}_{s.timestamp.isoformat()}"
+            r = results.get(cache_key)
+
+            meta = s.raw_metadata
+
+            if r is None:
+                score, reasons = rule_based_fallback(s)
+
+                meta["llm_score"] = score
+                meta["llm_reasons"] = reasons
+                meta["llm_cached"] = False
+
+                cache[cache_key] = {
+                    "score": score,
+                    "reasons": reasons,
+                    "category": None
+                }
+
+                continue
+
+            score = float(r["score"])
+            reasons = r["reasons"]
+            category = r.get("category")
+
+            meta["llm_score"] = score
+            meta["llm_reasons"] = reasons
+            meta["category"] = category
+            meta["llm_cached"] = False
+
+            # ---------- Save to cache ----------
+            cache[cache_key] = {
+                "score": score,
+                "reasons": reasons,
+                "category": category
+            }
 
     except Exception as e:
 
@@ -122,9 +173,17 @@ def apply_calendar_batch(signals):
         print(e)
         print("==========================\n")
 
-        # fallback for API failure
-        for s in signals:
+        for s in uncached_signals:
+
             score, reasons = rule_based_fallback(s)
-            meta = s.raw_metadata
+
             meta["llm_score"] = score
             meta["llm_reasons"] = reasons
+            meta["llm_cached"] = False
+
+            cache[cache_key] = {
+                "score": score,
+                "reasons": reasons,
+                "category": None
+            }
+    print("[DEBUG] Calendar addetinal cache size:", len(cache))

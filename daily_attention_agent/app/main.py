@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 from zoneinfo import ZoneInfo
-
+import json
+from pathlib import Path
 from app.state import DAAState
 from app.graph import build_graph
 from app.utils.google_creds import load_google_credentials
@@ -12,9 +13,43 @@ load_dotenv()
 IST = ZoneInfo("Asia/Kolkata")
 
 IST = ZoneInfo("Asia/Kolkata")
+CACHE_FILE = Path("calendar_llm_cache.json")
+if CACHE_FILE.exists():
+    with open(CACHE_FILE, "r") as f:
+        calendar_llm_cache = json.load(f)
+    print("[DEBUG] Calendar cache size:", len(calendar_llm_cache))
+    
+else:
+    calendar_llm_cache = {}
+# ---- Runtime settings ----
+SHOW_LOW_CALENDAR_EVENTS = True
 
-calendar_llm_cache = {}
+def clean_calendar_cache(cache):
+    """
+    Remove cache entries for events older than 1 day.
+    Prevents cache file from growing forever.
+    """
 
+    now = datetime.now(timezone.utc)
+    keep = {}
+
+    for event_id, data in cache.items():
+
+        # try to parse timestamp from event_id
+        try:
+            if "_" in event_id:
+                ts = event_id.split("_")[-1]
+                event_time = datetime.strptime(ts, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+
+                if event_time + timedelta(days=1) > now:
+                    keep[event_id] = data
+            else:
+                keep[event_id] = data
+
+        except Exception:
+            keep[event_id] = data
+
+    return keep
 
 def run_daily_attention_agent(
     user_id: str,
@@ -30,6 +65,7 @@ def run_daily_attention_agent(
 
     google_creds = load_google_credentials()
 
+    # ---------- Time Window ----------
     now = datetime.now(IST)
 
     time_window = {
@@ -55,6 +91,8 @@ def run_daily_attention_agent(
     }
 
     graph = build_graph()
+    # print("main cache id:", id(calendar_llm_cache))
+    # print("state cache id:", id(state["raw_metadata"]["calendar_llm_cache"]))
     final_state = graph.invoke(state)
 
     return final_state
@@ -99,16 +137,29 @@ if __name__ == "__main__":
         if not events:
             print("(none)")
         else:
-            
+            events_to_show = []
+            routine_events = []
+
             for item in events:
+
+                if item["priority_level"] == "low":
+
+                    if not SHOW_LOW_CALENDAR_EVENTS:
+                        routine_events.append(item)
+                    else:
+                        events_to_show.append(item)
+
+                else:
+                    events_to_show.append(item)
+                
+            for item in events_to_show:
 
                 ts = item["evidence"]["timestamp"]
                 event_time = ts.astimezone(IST).strftime("%d %b %H:%M")
 
                 priority = item["priority_level"].upper()
 
-                snippet = item["evidence"]["snippet"]
-                calendar_name = snippet.split("]")[0].strip("[") if snippet.startswith("[") else ""
+                calendar_name = item["evidence"].get("calendar_name", "")
 
                 print(f"\n[{priority}] {event_time}  {item['title']} ({calendar_name})")
 
@@ -117,15 +168,57 @@ if __name__ == "__main__":
 
                 print(f"   action: {item['recommended_action']}")
             
-            print("\n-- Risks --")
+            if not SHOW_LOW_CALENDAR_EVENTS and routine_events:
 
-            if not state.risks:
-                print("(none)")
-            else:
-                for r in state.risks:
-                    print(f"- {r['title']}: {r['reason']}")
+                print("\nRoutine schedule:")
 
-        again = input("\nRun again? (y/n): ").strip().lower()
+                count = len(routine_events)
 
-        if again != "y":
+                calendars = set()
+
+                for e in routine_events:
+                    cal = e["evidence"].get("calendar_name", "")
+                    calendars.add(cal)
+
+                cal_list = ", ".join(calendars)
+
+                print(f"   • {count} routine events from calendars: {cal_list}")
+
+        cache = state["raw_metadata"].get("calendar_llm_cache", {})
+
+        cleaned = clean_calendar_cache(cache)
+
+        cache.clear()
+        cache.update(cleaned)
+
+        if cache:
+            with open(CACHE_FILE, "w") as f:
+                json.dump(cache, f, indent=2)
+
+        print("[DEBUG] Calendar cache size:", len(cache))
+
+        cmd = input("\nRun again? (y/n/settings): ").strip().lower()
+
+        if cmd == "settings":
+
+            while True:
+
+                print("\nSettings")
+                print("1. Toggle LOW calendar events")
+                print("2. Back")
+
+                s = input("Choice: ").strip()
+
+                if s == "1":
+                    SHOW_LOW_CALENDAR_EVENTS = not SHOW_LOW_CALENDAR_EVENTS
+
+                    state = "ON" if SHOW_LOW_CALENDAR_EVENTS else "OFF"
+                    print(f"\nShow LOW priority calendar events: {state}")
+
+                elif s == "2":
+                    break
+
+            continue
+        
+        elif cmd != "y":
             break
