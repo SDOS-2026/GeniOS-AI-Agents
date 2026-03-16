@@ -15,7 +15,8 @@ if not GEMINI_MODEL:
     raise RuntimeError("GEMINI_MODEL missing from .env")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
-
+def get_llm():
+    return client
 
 def gemini_calendar_batch_priority(signals):
     print("[DEBUG] cal llm start")

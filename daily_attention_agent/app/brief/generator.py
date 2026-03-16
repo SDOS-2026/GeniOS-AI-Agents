@@ -23,14 +23,26 @@ def generate_brief(state: DAAState) -> DAAState:
         score = item["priority_score"]
         level = item["priority_level"]
         reasons = item["reasons"]
+        llm_brief = item.get("llm_brief")
+        title = signal.title
+        llm_reasoning = item.get("llm_reasoning")
 
         calendar_name = signal.raw_metadata.get("calendar_name", "Calendar")
 
+        summary = None
         # ---------- Map signal → attention type ----------
         if signal.signal_type == "EMAIL_THREAD":
             item_type = "email"
             recommended_action = "Review and respond if needed"
-
+            # Always keep original subject
+            title = signal.title
+            # LLM summary (if exists)
+            summary = item.get("llm_brief")
+            llm_reasoning = item.get("llm_reasoning")
+            if isinstance(llm_reasoning, str):
+                reasons = [llm_reasoning]
+            elif isinstance(llm_reasoning, list):
+                reasons = llm_reasoning
         elif signal.signal_type == "CALENDAR_EVENT":
 
             item_type = "meeting"
@@ -59,7 +71,8 @@ def generate_brief(state: DAAState) -> DAAState:
             type=item_type,
             priority_score=score,
             priority_level=level,
-            title=signal.title,
+            title=title,
+            summary=summary,
             why_flagged=reasons,
             recommended_action=recommended_action,
             evidence=evidence,
