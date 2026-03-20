@@ -3,7 +3,7 @@
 from typing import List, Dict, Any
 
 from app.models.unified_signal import UnifiedSignal
-from app.rules.email_rules import apply_email_rules
+from app.rules.email_rules import apply_email_rules, apply_email_batch
 from app.rules.calendar_rules import apply_calendar_batch
 
 
@@ -22,26 +22,37 @@ def score_signals(
     vip_senders: List[str],
     keywords: List[str],
     calendar_cache: dict,
+    email_cache: dict,
 ) -> List[Dict[str, Any]]:
     """
     Applies scoring to unified signals.
 
     Calendar → Gemini batch scoring
-    Email → rule-based scoring
+    Email → Gemini batch scoring (limit 5)
     """
 
     scored_items: List[Dict[str, Any]] = []
 
-    # --------- STEP 1: Collect calendar signals ----------
+    # --------- STEP 1: Collect signals ----------
     calendar_signals = [
         s for s in unified_signals
         if s.signal_type == "CALENDAR_EVENT"
     ]
 
+    email_signals = [
+        s for s in unified_signals
+        if s.signal_type == "EMAIL_THREAD"
+    ]
+    # Sort by timestamp descending and take top 5
+    email_signals.sort(key=lambda x: x.timestamp, reverse=True)
+    emails_to_score = email_signals[:5]
+
     # --------- STEP 2: Run batch Gemini scoring ----------
     if calendar_signals:
-        cache = calendar_cache
-        apply_calendar_batch(calendar_signals,cache)
+        apply_calendar_batch(calendar_signals, calendar_cache)
+
+    if emails_to_score:
+        apply_email_batch(emails_to_score, email_cache, vip_senders, keywords)
 
     # --------- STEP 3: Score signals ----------
     for signal in unified_signals:
@@ -51,32 +62,28 @@ def score_signals(
 
         # --------- Email ----------
         if signal.signal_type == "EMAIL_THREAD":
-
-            delta, why = apply_email_rules(
-                signal,
-                vip_senders=vip_senders,
-                keywords=keywords,
-            )
-
-            score += delta
-            reasons.extend(why)
+            # Only score if it was in the top 5 (and thus has llm_score set)
+            # or fallback if needed.
+            meta = signal.raw_metadata
+            if "llm_score" in meta:
+                score = meta.get("llm_score", 0)
+                reasons = meta.get("llm_reasons", [])
+            else:
+                # If not in top 5, we could either give it 0 or a very low score.
+                # The user said "limit number of mails being checked to 5".
+                # This implies we don't care about the others for now.
+                continue
 
         # --------- Calendar ----------
         elif signal.signal_type == "CALENDAR_EVENT":
-            # print(signal.raw_metadata)
             meta = signal.raw_metadata
-            # print("DEBUG CAL:", signal.title, meta.get("llm_score"))
-            # print(
-            #     "DEBUG CAL:",
-            #     signal.title,
-            #     signal.raw_metadata.get("calendar_name"),
-            #     signal.raw_metadata.get("llm_score")
-            # )
             score = meta.get("llm_score", 0)
             reasons = meta.get("llm_reasons", [])
 
         # --------- Ignore noise ----------
-        if score == 0:
+        # We skip if score is 0, UNLESS it's an email that was specifically checked
+        # (indicated by the presence of llm_score in metadata).
+        if score == 0 and "llm_score" not in signal.raw_metadata:
             continue
 
         scored_items.append({

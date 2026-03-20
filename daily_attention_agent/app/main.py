@@ -12,7 +12,25 @@ from dotenv import load_dotenv
 load_dotenv()
 IST = ZoneInfo("Asia/Kolkata")
 
-calendar_llm_cache = {}
+def load_cache(filename: str) -> Dict[str, Any]:
+    path = Path(filename)
+    if path.exists():
+        try:
+            with open(path, "r") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[ERROR] Failed to load cache {filename}: {e}")
+    return {}
+
+def save_cache(filename: str, data: Dict[str, Any]):
+    try:
+        with open(filename, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"[ERROR] Failed to save cache {filename}: {e}")
+
+calendar_llm_cache = load_cache("calendar_llm_cache.json")
+email_llm_cache = load_cache("email_llm_cache.json")
 
 # ---- Runtime settings ----
 SHOW_LOW_CALENDAR_EVENTS = True
@@ -54,6 +72,7 @@ def run_daily_attention_agent(
         "gmail_credentials": google_creds,
         "calendar_credentials": google_creds,
         "calendar_llm_cache": calendar_llm_cache,
+        "email_llm_cache": email_llm_cache,
     }
 
     graph = build_graph()
@@ -76,6 +95,10 @@ if __name__ == "__main__":
         )
 
         print("\n=== DAILY ATTENTION BRIEF ===\n")
+
+        # Save caches after each run
+        save_cache("calendar_llm_cache.json", calendar_llm_cache)
+        save_cache("email_llm_cache.json", email_llm_cache)
 
         emails = []
         events = []
@@ -175,5 +198,7 @@ if __name__ == "__main__":
 
                 elif s == "2":
                     break
-
+        elif cmd == 'y':
             continue
+        else:
+            break

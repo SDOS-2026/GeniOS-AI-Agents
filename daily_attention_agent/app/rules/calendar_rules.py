@@ -175,8 +175,10 @@ def apply_calendar_batch(signals, cache):
 
         for s in uncached_signals:
 
+            cache_key = f"{s.record_id}_{s.timestamp.isoformat()}"
             score, reasons = rule_based_fallback(s)
 
+            meta = s.raw_metadata
             meta["llm_score"] = score
             meta["llm_reasons"] = reasons
             meta["llm_cached"] = False
