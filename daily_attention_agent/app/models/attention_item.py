@@ -13,6 +13,8 @@ class Evidence(BaseModel):
     tool: str
     record_id: str
     timestamp: datetime
+    end_time: datetime | None = None
+    is_all_day: bool = False
     snippet: str
     calendar_name: str | None = None
 
