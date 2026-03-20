@@ -63,6 +63,8 @@ def generate_brief(state: DAAState) -> DAAState:
             tool=signal.source_tool,
             record_id=signal.record_id,
             timestamp=signal.timestamp,
+            end_time=signal.end_time,
+            is_all_day=signal.is_all_day,
             snippet=signal.snippet,
             calendar_name=calendar_name,
         )

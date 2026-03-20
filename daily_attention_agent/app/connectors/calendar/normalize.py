@@ -6,25 +6,37 @@ from datetime import datetime, timezone
 from app.models.unified_signal import UnifiedSignal
 
 
-def _parse_event_timestamp(event: dict) -> datetime:
+def _parse_event_time(event: dict) -> tuple[datetime, datetime, bool]:
     """
-    Return a timezone-aware UTC datetime for both timed and all-day events.
+    Return (start, end, is_all_day) as timezone-aware UTC datetimes.
     """
-    start = event.get("start", {})
+    start_data = event.get("start", {})
+    end_data = event.get("end", {})
 
-    # Timed event (RFC3339)
-    if "dateTime" in start:
-        ts = datetime.fromisoformat(start["dateTime"].replace("Z", "+00:00"))
-        return ts.astimezone(timezone.utc)
+    is_all_day = "date" in start_data
 
-    # All-day event → treat as start of day UTC
-    if "date" in start:
-        return datetime.fromisoformat(start["date"]).replace(
-            tzinfo=timezone.utc
-        )
+    if "dateTime" in start_data:
+        # Timed event (RFC3339)
+        start_ts = datetime.fromisoformat(start_data["dateTime"].replace("Z", "+00:00")).astimezone(timezone.utc)
+        end_ts = None
+        if "dateTime" in end_data:
+            end_ts = datetime.fromisoformat(end_data["dateTime"].replace("Z", "+00:00")).astimezone(timezone.utc)
+        
+        # If no end time, default to start + 30m or same as start
+        return start_ts, end_ts or start_ts, False
 
-    # Fallback (should never happen)
-    return datetime.now(timezone.utc)
+    if "date" in start_data:
+        # All-day event
+        start_ts = datetime.fromisoformat(start_data["date"]).replace(tzinfo=timezone.utc)
+        end_ts = start_ts
+        if "date" in end_data:
+            end_ts = datetime.fromisoformat(end_data["date"]).replace(tzinfo=timezone.utc)
+        
+        return start_ts, end_ts, True
+
+    # Fallback
+    now = datetime.now(timezone.utc)
+    return now, now, False
 
 
 def normalize_calendar_events(raw_events: List[dict]) -> List[UnifiedSignal]:
@@ -35,7 +47,7 @@ def normalize_calendar_events(raw_events: List[dict]) -> List[UnifiedSignal]:
         summary = event.get("summary", "(no title)")
 
         try:
-            timestamp = _parse_event_timestamp(event)
+            start_ts, end_ts, is_all_day = _parse_event_time(event)
         except Exception:
             continue
 
@@ -58,7 +70,9 @@ def normalize_calendar_events(raw_events: List[dict]) -> List[UnifiedSignal]:
             source_tool="calendar",
             record_id=event_id,
             owner=event.get("organizer", {}).get("email"),
-            timestamp=timestamp,  # ✅ ALWAYS timezone-aware UTC
+            timestamp=start_ts,  # ✅ ALWAYS timezone-aware UTC
+            end_time=end_ts,
+            is_all_day=is_all_day,
             title=summary,
             snippet=snippet,
             url=event.get("htmlLink"),
@@ -66,7 +80,7 @@ def normalize_calendar_events(raw_events: List[dict]) -> List[UnifiedSignal]:
             raw_metadata={
                 "attendee_count": len(attendees),
                 "has_meet_link": has_meet_link,
-                "is_all_day": "date" in event.get("start", {}),
+                "is_all_day": is_all_day,
                 "calendar_name": event.get("_calendar_name"),
                 "calendar_id": event.get("_calendar_id"),
                 "llm_cached": False,

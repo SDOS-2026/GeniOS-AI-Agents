@@ -1,0 +1,69 @@
+{
+  "19d0c0b6e27e5646_2026-03-20T16:19:28+00:00": {
+    "score": 95.0,
+    "reasons": [
+      "Security alert requires immediate review to verify activity or take protective measures.",
+      "Concern for account security is critical."
+    ],
+    "category": "actionable"
+  },
+  "19d0bfb7b4d1a3e7_2026-03-20T16:02:01+00:00": {
+    "score": 20.0,
+    "reasons": [
+      "Promotional email offering opportunities, not requiring immediate action.",
+      "Informational content, not urgent business communication."
+    ],
+    "category": "promotional"
+  },
+  "19d0bf113b889d6a_2026-03-20T08:50:42-07:00": {
+    "score": 60.0,
+    "reasons": [
+      "GitHub notification about an issue being closed, relevant for project awareness.",
+      "Recipient was assigned, warranting a quick review, but no immediate action required."
+    ],
+    "category": "informational"
+  },
+  "19ce146d5ffca34c_2026-03-20T08:48:30-07:00": {
+    "score": 75.0,
+    "reasons": [
+      "GitHub notification indicating a Pull Request was merged into master.",
+      "Important project update, especially since the recipient was assigned, may require follow-up today."
+    ],
+    "category": "actionable"
+  },
+  "19d0bbafdab40db4_2026-03-20T14:51:33+00:00": {
+    "score": 45.0,
+    "reasons": [
+      "Announcement for an event, mainly informational.",
+      "Invitation to join a group, not a critical action."
+    ],
+    "category": "informational"
+  },
+  "19d0c479a77b6bb2_2026-03-20T10:25:12-07:00": {
+    "score": 80.0,
+    "reasons": [
+      "Automated security notification for identity verification.",
+      "Contains a time-sensitive code (15-minute validity) requiring immediate attention from the recipient.",
+      "The personal assistant should alert the recipient promptly due to its time-critical nature."
+    ],
+    "category": "other"
+  },
+  "19d0c455b74fc6b9_2026-03-20T10:22:47-07:00": {
+    "score": 20.0,
+    "reasons": [
+      "Automated GitHub notification.",
+      "Provides a status update (issue closed) for a project.",
+      "No direct action required from the personal assistant."
+    ],
+    "category": "informational"
+  },
+  "19d0c403e38b2b1a_2026-03-20T10:19:46-07:00": {
+    "score": 25.0,
+    "reasons": [
+      "Automated GitHub notification.",
+      "Provides an update on a pull request with a review comment.",
+      "No direct action required from the personal assistant."
+    ],
+    "category": "informational"
+  }
+}
