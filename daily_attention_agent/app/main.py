@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any
 from zoneinfo import ZoneInfo
-
+import json
+from pathlib import Path
 from app.state import DAAState
 from app.graph import build_graph
 from app.utils.google_creds import load_google_credentials
@@ -30,6 +31,7 @@ def run_daily_attention_agent(
 
     google_creds = load_google_credentials()
 
+    # ---------- Time Window ----------
     now = datetime.now(IST)
 
     time_window = {
@@ -55,6 +57,8 @@ def run_daily_attention_agent(
     }
 
     graph = build_graph()
+    # print("main cache id:", id(calendar_llm_cache))
+    # print("state cache id:", id(state["raw_metadata"]["calendar_llm_cache"]))
     final_state = graph.invoke(state)
 
     return final_state
@@ -89,11 +93,16 @@ if __name__ == "__main__":
             for item in emails:
                 ts = item["evidence"]["timestamp"]
                 email_time = ts.astimezone(IST).strftime("%d %b %H:%M")
-
-                print(
-                    f"- [{item['priority_level'].upper()}] [{email_time}] {item['title']}"
-                )
-
+                priority = item["priority_level"].upper()
+                print(f"[{priority}] [{email_time}] {item['title']}")
+                if item.get("summary"):
+                    print(f"   summary: {item['summary']}")
+                else:
+                    print("NO summary")
+                if item["priority_level"] in ["medium", "high", "critical"]:
+                    for r in item["why_flagged"]:
+                        print(f"   reason: {r}")
+                    print(f"   action: {item['recommended_action']}")
         print("\n-- Events --")
 
         if not events:

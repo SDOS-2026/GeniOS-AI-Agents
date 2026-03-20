@@ -35,7 +35,7 @@ class AttentionItem(BaseModel):
     priority_level: PriorityLevel
 
     title: str
-
+    summary: str | None = None
     # ---------- Why this exists ----------
     why_flagged: List[str] = Field(
         description="Human-readable reasons (deterministic)"
