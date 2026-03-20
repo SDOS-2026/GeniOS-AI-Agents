@@ -102,3 +102,69 @@ def gemini_calendar_batch_priority(signals):
 
     print("[DEBUG] cal llm end")    
     return results
+
+def gemini_gmail_batch_priority(signals):
+    print("[DEBUG] gmail llm start")
+    emails = []
+
+    for s in signals:
+        meta = s.raw_metadata
+
+        emails.append({
+            "id": s.record_id,
+            "sender": meta.get("last_sender"),
+            "subject": s.title,
+            "snippet": s.snippet,
+            "time": str(s.timestamp),
+        })
+
+    prompt = f"""
+    You are prioritizing emails for a personal assistant.
+    The goal is to determine which emails require immediate attention today.
+
+    Key reasoning principles:
+    • Action-oriented emails (requests for approval, meeting coordination, urgent questions) are higher priority.
+    • VIP senders (executives, direct reports, key clients) are higher priority.
+    • Informational emails (newsletters, status updates without action, generic announcements) are lower priority.
+    • Personal emails or social notifications are lower priority.
+    • Recently received emails that seem time-sensitive should be prioritized.
+
+    Score meaning:
+    90-100 → critical action required immediately
+    70-89 → important email needing attention today
+    40-69 → normal business communication
+    10-39 → low priority / informational news
+    0-9 → spam or automated notifications
+
+    Return STRICT JSON list:
+    [
+    {{
+        "id": "...",
+        "score": number,
+        "category": "actionable | informational | social | promotional | personal | other",
+        "reasons": ["short explanation"]
+    }}
+    ]
+
+    Emails:
+    {json.dumps(emails, indent=2)}
+    """
+    
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=prompt
+    )
+
+    text = response.text.strip()
+
+    if "```" in text:
+        text = text.split("```")[1].replace("json", "").strip()
+
+    text = text.replace("json", "").strip()
+
+    data = json.loads(text)
+
+    results = {item["id"]: item for item in data}
+    print(results)
+    print("[DEBUG] gmail llm end")    
+    return results
