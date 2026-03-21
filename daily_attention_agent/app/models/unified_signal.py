@@ -48,6 +48,16 @@ class UnifiedSignal(BaseModel):
         description="True if this is an all-day event"
     )
 
+    end_time: Optional[datetime] = Field(
+        default=None,
+        description="Meeting end time if applicable"
+    )
+
+    is_all_day: bool = Field(
+        default=False,
+        description="True if this is an all-day event"
+    )
+
     # ---------- Content (minimal, privacy-safe) ----------
     title: str = Field(
         description="Subject line or meeting title"

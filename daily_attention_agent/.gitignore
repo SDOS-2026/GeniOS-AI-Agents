@@ -19,5 +19,6 @@ token.pickle
 .idea/
 .vscode/
 credentials.json
-
+calendar_llm_cache.json
+email_llm_cache.json
 MY/

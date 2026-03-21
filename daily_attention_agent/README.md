@@ -1,161 +1,82 @@
-**directory structure**
+# Daily Attention Agent (V1) 🧠📬
 
-
-daily_attention_agent/
-│
-├── README.md
-├── pyproject.toml / requirements.txt
-├── .env.example
-│
-├── app/
-│   ├── main.py                    # Entry point (API / CLI / job trigger)
-│   ├── graph.py                   # LangGraph definition + wiring
-│   ├── state.py                   # DAAState (single source of truth)
-│
-│   ├── config/
-│   │   ├── defaults.py            # scoring thresholds, caps
-│   │   ├── vip.py                 # VIP sender config
-│   │   └── keywords.py            # urgency keywords
-│
-│   ├── connectors/                # Tool integrations (READ-ONLY)
-│   │   ├── __init__.py
-│   │   ├── base.py                # Connector contract
-│   │   ├── gmail/
-│   │   │   ├── client.py          # Auth + API calls
-│   │   │   ├── fetch.py           # Fetch raw signals
-│   │   │   └── normalize.py       # Gmail → UnifiedSignal
-│   │   └── calendar/
-│   │       ├── client.py
-│   │       ├── fetch.py
-│   │       └── normalize.py
-│
-│   ├── models/                    # Strict schemas (Pydantic)
-│   │   ├── unified_signal.py
-│   │   ├── attention_item.py
-│   │   ├── evidence.py
-│   │   └── action_payload.py
-│
-│   ├── rules/                     # Deterministic logic (NO LLM)
-│   │   ├── email_rules.py
-│   │   ├── calendar_rules.py
-│   │   └── scoring.py
-│
-│   ├── llm/                       # Optional intelligence layer
-│   │   ├── client.py              # OpenAI / provider wrapper
-│   │   ├── prompts.py             # JSON-only prompts
-│   │   ├── summarize.py
-│   │   └── drafts.py
-│
-│   ├── brief/                     # Output assembly
-│   │   ├── generator.py
-│   │   └── formatter.py
-│
-│   ├── guardrails/                # Trust & safety
-│   │   ├── validate_schema.py
-│   │   ├── validate_evidence.py
-│   │   ├── no_side_effects.py
-│   │   └── cost_caps.py
-│
-│   ├── storage/                   # Persistence (V1 minimal)
-│   │   ├── repository.py
-│   │   └── models.py
-│
-│   └── utils/
-│       ├── time.py
-│       ├── dedupe.py
-│       └── logging.py
-│
-├── tests/
-│   ├── connectors/
-│   ├── rules/
-│   ├── graph/
-│   └── fixtures/
-│
-└── scripts/
-    ├── run_daily.py               # Scheduled run
-    └── run_local.py               # Dev testing
-
-
-
-
-
-
-
-# Daily Attention Agent (V1)
-
-This project implements a read-only Executive Assistant Agent that analyzes
-Gmail and Google Calendar to surface daily attention items.
+An intelligent, read-only Executive Assistant Agent built with **LangGraph** and **Gemini 2.5 Flash**. It analyzes your Gmail and Google Calendar to surface critical updates, identify schedule risks, and prioritize your daily attention items.
 
 ---
 
-## 🔐 Google OAuth Setup (Required)
+## ✨ Core Features
 
-This agent uses **read-only Google OAuth access** for:
-- Gmail (metadata only)
-- Google Calendar (events only)
+### 📨 Smart Email Prioritization
+- **LLM-Based Scoring**: Uses Gemini to evaluate the urgency and actionability of your emails.
+- **5-Email Focus**: Automatically selects the 5 most recent emails to ensure a concise and focused briefing.
+- **Intelligent Fallback**: If LLM quotas are reached, the system falls back to a deterministic rule-based engine (VIP senders, urgent keywords, staleness) so you never miss a beat.
 
-No emails are sent.
-No calendar events are modified.
+### 📅 Calendar Risk Detection
+- **Schedule Analysis**: Detects meeting conflicts, overloaded days, and back-to-back sessions.
+- **Contextual Warnings**: Flags events missing meeting links or those scheduled during unusual hours.
+
+### 🛡️ Robust Architecture
+- **Persistent Caching**: Scores are cached in `email_llm_cache.json` and `calendar_llm_cache.json`. This avoids redundant LLM calls, maintains performance, and respects API rate limits.
+- **State Management**: Built on **LangGraph**, ensuring a robust, stateful execution flow from fetching signals to generating the final brief.
+- **Read-Only Security**: The agent uses restricted Google OAuth scopes. It can read your data but cannot send emails or modify your calendar.
 
 ---
 
-### Required Environment Variables
+## 🛠️ Setup & Configuration
 
-Create a `.env` file in the project root with:
+### 1. Prerequisites
+- Python 3.10+
+- A Google Cloud Project with Gmail and Calendar APIs enabled.
+- A Gemini API Key from [Google AI Studio](https://aistudio.google.com/).
 
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REFRESH_TOKEN=your_google_refresh_token
+### 2. Environment Variables
+Create a `.env` file in the project root:
+
+```env
+# Gemini Config
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-2.5-flash
+
+# Google OAuth Config
+GOOGLE_CLIENT_ID=your_id
+GOOGLE_CLIENT_SECRET=your_secret
+GOOGLE_REFRESH_TOKEN=your_refresh_token
 GOOGLE_TOKEN_URI=https://oauth2.googleapis.com/token
+```
 
+### 3. Usage
+1. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. **Run the Agent**:
+   ```bash
+   python -m app.main
+   ```
+3. **Interactive Menu**: Follow the terminal prompts to view your brief, toggle visibility settings, or refresh the feed.
 
-⚠️ Never commit `.env` to version control.
+---
+
+## 📁 Project Structure
+
+```text
+daily_attention_agent/
+├── app/
+│   ├── main.py           # Entry point & Interactive Loop
+│   ├── graph.py          # LangGraph Workflow Definition
+│   ├── state.py          # DAAState Schema
+│   ├── connectors/       # Gmail & Calendar API Integrations
+│   ├── rules/            # Deterministic Scoring & LLM Fallbacks
+│   ├── llm/              # Gemini Client & Batch Prioritization
+│   └── models/           # Pydantic Data Models (UnifiedSignal, etc.)
+├── email_llm_cache.json  # Persistent Email Cache
+├── calendar_llm_cache.json # Persistent Calendar Cache
+└── README.md
+```
 
 ---
 
-### How to Obtain Credentials
-
-#### 1. Create Google Cloud Project
-- Go to https://console.cloud.google.com/
-- Create a new project
-
-#### 2. Enable APIs
-Enable:
-- Gmail API
-- Google Calendar API
-
-#### 3. Configure OAuth Consent Screen
-- Type: External
-- Add scopes:
-  - gmail.readonly
-  - calendar.readonly
-- Add your email as a test user
-
-#### 4. Create OAuth Client ID
-- Type: Desktop App
-- Save Client ID and Client Secret
-
-#### 5. Generate Refresh Token (One-Time)
-
-Run the provided script:
-
-```bash
-python scripts/get_refresh_token.py
-Authorize the app and copy the printed refresh token.
-
-Running the Agent
-pip install -r requirements.txt
-python -m app.main
-🔒 Security Guarantees
-Read-only Google scopes
-
-No email sending
-
-No calendar modification
-
-No token files written to disk
-
-Credentials loaded from environment only
-
-
----
+## 🔒 Security Guarantees
+- **Read-Only**: The agent does not have permission to `write` or `delete` any data in your Google account.
+- **Local Persistence**: Caches are stored locally on your machine.
+- **Metadata Only**: The agent primarily focuses on email metadata and snippets to maintain privacy.

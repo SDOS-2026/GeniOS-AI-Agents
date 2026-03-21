@@ -55,7 +55,8 @@ def rule_scoring(state: DAAState) -> DAAState:
         unified_signals=state.unified_signals,
         vip_senders=state.vip_senders,
         keywords=state.keywords,
-        calendar_cache=state.raw_metadata.setdefault("calendar_llm_cache", {})
+        calendar_cache=state.raw_metadata.setdefault("calendar_llm_cache", {}),
+        email_cache=state.raw_metadata.setdefault("email_llm_cache", {})
     )
     return state
 
