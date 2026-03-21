@@ -2,29 +2,21 @@
 
 from typing import List
 from datetime import datetime, timezone
-
+from datetime import timedelta
 from app.models.unified_signal import UnifiedSignal
 
 
 def _parse_event_timestamp(event: dict) -> datetime:
-    """
-    Return a timezone-aware UTC datetime for both timed and all-day events.
-    """
-    start = event.get("start", {})
+    if not event:
+        return None
 
-    # Timed event (RFC3339)
-    if "dateTime" in start:
-        ts = datetime.fromisoformat(start["dateTime"].replace("Z", "+00:00"))
-        return ts.astimezone(timezone.utc)
+    if "dateTime" in event:
+        return datetime.fromisoformat(event["dateTime"].replace("Z", "+00:00")).astimezone(timezone.utc)
 
-    # All-day event → treat as start of day UTC
-    if "date" in start:
-        return datetime.fromisoformat(start["date"]).replace(
-            tzinfo=timezone.utc
-        )
+    if "date" in event:
+        return datetime.fromisoformat(event["date"]).replace(tzinfo=timezone.utc)
 
-    # Fallback (should never happen)
-    return datetime.now(timezone.utc)
+    return None
 
 
 def normalize_calendar_events(raw_events: List[dict]) -> List[UnifiedSignal]:
@@ -35,7 +27,16 @@ def normalize_calendar_events(raw_events: List[dict]) -> List[UnifiedSignal]:
         summary = event.get("summary", "(no title)")
 
         try:
-            timestamp = _parse_event_timestamp(event)
+            start_time = _parse_event_timestamp(event.get("start"))
+            end_time = _parse_event_timestamp(event.get("end"))
+
+            if not start_time:
+                continue
+
+            is_all_day = "date" in event.get("start", {})
+
+            if start_time and not end_time and not is_all_day:
+                end_time = start_time + timedelta(hours=1)
         except Exception:
             continue
 
@@ -58,7 +59,9 @@ def normalize_calendar_events(raw_events: List[dict]) -> List[UnifiedSignal]:
             source_tool="calendar",
             record_id=event_id,
             owner=event.get("organizer", {}).get("email"),
-            timestamp=timestamp,  # ✅ ALWAYS timezone-aware UTC
+            timestamp=start_time,  # ✅ ALWAYS timezone-aware UTC
+            end_time=end_time,
+            is_all_day=is_all_day,
             title=summary,
             snippet=snippet,
             url=event.get("htmlLink"),

@@ -155,6 +155,27 @@ if __name__ == "__main__":
 
                 print(f"   • {count} routine events from calendars: {cal_list}")
 
+
+        print("\n-- Attention Required --")
+
+        risks = state.get("risks", [])
+
+        if not risks:
+            print("(none)")
+        else:
+            for r in risks:
+                print(f"- {r['title']}")
+                print(f"  {r['reason']}")
+
+                risk_events = r.get("events", [])
+                for e in risk_events[:5]:
+                    print(f"   • {e}")
+
+                if len(risk_events) > 5:
+                    print(f"   • +{len(risk_events)-5} more")
+
+
+
         cmd = input("\nRun again? (y/n/settings): ").strip().lower()
 
         if cmd == "settings":
