@@ -3,7 +3,7 @@
 from typing import List, Dict, Any
 from datetime import datetime
 
-from app.rules.calendar_rules import detect_calendar_risks
+from app.rules.calendar_rules import detect_conflicts, detect_overload, detect_duplicates, detect_missing_links, detect_missing_agenda
 from app.state import DAAState
 from app.models.attention_item import AttentionItem, Evidence
 
@@ -105,8 +105,12 @@ def generate_brief(state: DAAState) -> DAAState:
         if item["signal"].signal_type == "CALENDAR_EVENT"
     ]
 
-    calendar_risks = detect_calendar_risks(calendar_signals)
-    risks.extend(calendar_risks)
+    for detector in (detect_conflicts,
+                     detect_overload,
+                     detect_duplicates,
+                     detect_missing_links,
+                     detect_missing_agenda):
+        risks.extend(detector(calendar_signals))
 
     # ---------- Sort attention items ----------
     attention_items.sort(

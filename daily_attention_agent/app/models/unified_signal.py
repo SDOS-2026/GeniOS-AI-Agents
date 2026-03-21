@@ -38,6 +38,15 @@ class UnifiedSignal(BaseModel):
     timestamp: datetime = Field(
         description="Last activity time (email received, meeting start)"
     )
+    end_time: Optional[datetime] = Field(
+        default=None,
+        description="Meeting end time if applicable"
+    )
+
+    is_all_day: bool = Field(
+        default=False,
+        description="True if this is an all-day event"
+    )
 
     end_time: Optional[datetime] = Field(
         default=None,
