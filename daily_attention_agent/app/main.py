@@ -34,6 +34,7 @@ email_llm_cache = load_cache("email_llm_cache.json")
 
 # ---- Runtime settings ----
 SHOW_LOW_CALENDAR_EVENTS = True
+SHOW_LOW_EMAIL_EVENTS = True
 
 def run_daily_attention_agent(
     user_id: str,
@@ -113,7 +114,19 @@ if __name__ == "__main__":
         if not emails:
             print("(none)")
         else:
+            emails_to_show = []
+            routine_emails = []
+
             for item in emails:
+                if item["priority_level"] == "low":
+                    if not SHOW_LOW_EMAIL_EVENTS:
+                        routine_emails.append(item)
+                    else:
+                        emails_to_show.append(item)
+                else:
+                    emails_to_show.append(item)
+
+            for item in emails_to_show:
                 ts = item["evidence"]["timestamp"]
                 email_time = ts.astimezone(IST).strftime("%d %b %H:%M")
                 priority = item["priority_level"].upper()
@@ -126,6 +139,11 @@ if __name__ == "__main__":
                     for r in item["why_flagged"]:
                         print(f"   reason: {r}")
                     print(f"   action: {item['recommended_action']}")
+
+            if not SHOW_LOW_EMAIL_EVENTS and routine_emails:
+                print("\nRoutine emails:")
+                count = len(routine_emails)
+                print(f"   • {count} low priority emails suppressed")
         print("\n-- Events --")
 
         if not events:
@@ -242,7 +260,8 @@ if __name__ == "__main__":
 
                 print("\nSettings")
                 print("1. Toggle LOW calendar events")
-                print("2. Back")
+                print("2. Toggle LOW email events")
+                print("3. Back")
 
                 s = input("Choice: ").strip()
 
@@ -253,6 +272,12 @@ if __name__ == "__main__":
                     print(f"\nShow LOW priority calendar events: {state}")
 
                 elif s == "2":
+                    SHOW_LOW_EMAIL_EVENTS = not SHOW_LOW_EMAIL_EVENTS
+
+                    state = "ON" if SHOW_LOW_EMAIL_EVENTS else "OFF"
+                    print(f"\nShow LOW priority email events: {state}")
+
+                elif s == "3":
                     break
         elif cmd == 'y':
             continue
