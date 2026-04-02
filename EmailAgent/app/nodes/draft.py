@@ -1,5 +1,23 @@
 from app.llm.router import call_llm
 from app.memory.memory_utils import summarize_compose_memory
+import json
+
+
+def _is_non_draft_json_blob(text: str) -> bool:
+    if not text:
+        return False
+    stripped = text.strip()
+    if not (stripped.startswith("{") and stripped.endswith("}")):
+        return False
+    try:
+        parsed = json.loads(stripped)
+    except Exception:
+        return False
+    if not isinstance(parsed, dict):
+        return False
+    # Typical classifier/error payload that should never be used as email body
+    marker_keys = {"priority", "category", "intent", "confidence", "reasoning"}
+    return bool(marker_keys.intersection(parsed.keys()))
 
 
 def draft_node(state):
@@ -92,6 +110,9 @@ OUTPUT FORMAT (STRICT):
     state["subject"] = subject
 
     # Absolute safety fallback
+    if _is_non_draft_json_blob(draft):
+        draft = ""
+
     if not draft:
         draft = (
             "Thank you for your message. I have reviewed the details and will "

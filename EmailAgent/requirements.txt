@@ -22,3 +22,6 @@ google-genai==1.59.0
 
 # Superbase
 supabase==2.27.2
+
+# UI
+streamlit>=1.37.0
