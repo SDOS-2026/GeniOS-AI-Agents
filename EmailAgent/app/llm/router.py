@@ -20,7 +20,7 @@ def call_llm(prompt: str, task: str) -> str:
     except ClientError as e:
         # Quota / rate limit / API errors
         print(f"⚠️ Gemini failed ({task}):", e)
-        return call_ollama(safe_prompt)
+        return call_ollama(safe_prompt, task=task)
     except Exception as e:
         print(f"⚠️ LLM error ({task}):", e)
-        return call_ollama(safe_prompt)
+        return call_ollama(safe_prompt, task=task)

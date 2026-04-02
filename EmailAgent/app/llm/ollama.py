@@ -3,7 +3,27 @@ import os
 
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-def call_ollama(prompt: str) -> str:
+def _fallback_response(task: str, error_text: str) -> str:
+    task = (task or "").lower()
+
+    if task in {"drafting", "summarization"}:
+        return ""
+
+    if task == "compose":
+        return (
+            '{"subject":"Draft","draft":"Thank you for your email. I will review and respond shortly.",'
+            '"recipient":{"to":[],"cc":[],"bcc":[]},"attachments":[],"tone":"professional",'
+            '"brevity":"default","summary":"Draft created from fallback."}'
+        )
+
+    return (
+        '{"priority":"MEDIUM","category":"FYI","intent":"WAIT",'
+        f'"confidence":0.2,"reasoning":"{error_text}"'
+        "}"
+    )
+
+
+def call_ollama(prompt: str, task: str = "general") -> str:
     try:
         resp = requests.post(
             f"{OLLAMA_URL}/api/generate",
@@ -16,7 +36,7 @@ def call_ollama(prompt: str) -> str:
         )
 
         if resp.status_code != 200:
-            return '{"priority":"MEDIUM","category":"FYI","intent":"WAIT","confidence":0.2,"reasoning":"Ollama HTTP error"}'
+            return _fallback_response(task, "Ollama HTTP error")
 
         data = resp.json()
 
@@ -24,10 +44,10 @@ def call_ollama(prompt: str) -> str:
             return data["response"]
 
         if "error" in data:
-            return '{"priority":"MEDIUM","category":"FYI","intent":"WAIT","confidence":0.2,"reasoning":"Ollama error: ' + data["error"] + '"}'
+            return _fallback_response(task, f"Ollama error: {data['error']}")
 
         # Unknown shape
-        return '{"priority":"MEDIUM","category":"FYI","intent":"WAIT","confidence":0.2,"reasoning":"Ollama returned unexpected payload"}'
+        return _fallback_response(task, "Ollama returned unexpected payload")
 
-    except Exception as e:
-        return '{"priority":"MEDIUM","category":"FYI","intent":"WAIT","confidence":0.1,"reasoning":"Ollama exception occurred"}'
+    except Exception:
+        return _fallback_response(task, "Ollama exception occurred")

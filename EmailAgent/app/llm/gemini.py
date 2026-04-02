@@ -5,15 +5,29 @@ import json
 
 load_dotenv() 
 
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-print("Gemini key loaded:", bool(os.getenv("GEMINI_API_KEY")))
+_client = None
+
+
+def _get_client():
+  global _client
+  if _client is not None:
+    return _client
+
+  api_key = os.getenv("GEMINI_API_KEY")
+  if not api_key:
+    raise RuntimeError("GEMINI_API_KEY is missing in environment")
+
+  _client = genai.Client(api_key=api_key)
+  return _client
+
 
 def call_gemini(prompt: str) -> str:
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
-    return response.text
+  client = _get_client()
+  response = client.models.generate_content(
+      model="gemini-2.5-flash",
+      contents=prompt
+  )
+  return response.text
 
 def interpret_intent(user_prompt: str) -> dict:
     """
@@ -97,6 +111,8 @@ RULES:
 '''
    )
     
+    client = _get_client()
+
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=f"{system_instruction}\nUser Prompt: {user_prompt}"
