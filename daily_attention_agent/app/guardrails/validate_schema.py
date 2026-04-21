@@ -1,6 +1,6 @@
 # app/guardrails/validate_schema.py
 
-from app.state import DAAState
+from app.core.state import DAAState
 
 
 def validate_schema(state: DAAState) -> None:

@@ -1,7 +1,7 @@
 # app/connectors/normalize.py
 
 from typing import List
-from app.state import DAAState
+from app.core.state import DAAState
 from app.models.unified_signal import UnifiedSignal
 
 from app.connectors.gmail.normalize import normalize_gmail_threads

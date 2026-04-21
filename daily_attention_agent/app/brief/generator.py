@@ -4,7 +4,7 @@ from typing import List, Dict, Any
 from datetime import datetime
 
 from app.rules.calendar_rules import detect_conflicts, detect_overload, detect_duplicates, detect_missing_links, detect_missing_agenda
-from app.state import DAAState
+from app.core.state import DAAState
 from app.models.attention_item import AttentionItem, Evidence
 
 
