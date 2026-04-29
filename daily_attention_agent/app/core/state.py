@@ -1,7 +1,7 @@
 # app/state.py
 
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime, timezone
 from app.models.unified_signal import UnifiedSignal
 
@@ -14,6 +14,11 @@ class DAAState(BaseModel):
     - Every node MUST read/write only via this object
     - If something is not here, it does not exist
     """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
+    # ========== MCP SESSION (Injected Dependency) ==========
+    mcp_session: Any = Field(default=None, exclude=True)
 
     # ========== INPUT (from Mr. Elite / entry point) ==========
     user_id: str

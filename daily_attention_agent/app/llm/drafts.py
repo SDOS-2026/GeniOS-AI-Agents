@@ -1,7 +1,7 @@
 # app/llm/drafts.py
 
 from typing import List, Dict, Any
-from app.state import DAAState
+from app.core.state import DAAState
 
 
 def generate_drafts_if_enabled(state: DAAState) -> List[Dict[str, Any]]:

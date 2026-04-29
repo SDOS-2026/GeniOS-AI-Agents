@@ -3,7 +3,7 @@ __pycache__/
 *.pyo
 *.pyd
 .python-version
-
+.pytest_cache
 # Virtual environment
 venv/
 .venv/

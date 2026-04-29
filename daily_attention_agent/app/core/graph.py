@@ -1,7 +1,7 @@
 # app/graph.py
 
 from langgraph.graph import StateGraph, END
-from app.state import DAAState
+from app.core.state import DAAState
 
 # ---- Import node functions (to be implemented next) ----
 from app.connectors.gmail.fetch import fetch_gmail_signals
@@ -22,23 +22,23 @@ from app.connectors.normalize import normalize_signals
 
 # ---------- GRAPH NODES ----------
 
-def fetch_signals(state: DAAState) -> DAAState:
+async def fetch_signals(state: DAAState) -> DAAState:
     """
     Fetch raw signals from Gmail and Calendar.
     NO LLM. NO SCORING.
     """
     if "gmail" in state.connected_tools:
         print("[DEBUG] gmail fetch start")
-        state.raw_signals.extend(
-            fetch_gmail_signals(state)
-        )
+        # Now fetch_gmail_signals is async
+        results = await fetch_gmail_signals(state)
+        state.raw_signals.extend(results)
         print("[DEBUG] gmail fetch end")
 
     if "calendar" in state.connected_tools:
         print("[DEBUG] cal fetch start")
-        state.raw_signals.extend(
-            fetch_calendar_signals(state)
-        )
+        # Now fetch_calendar_signals is async
+        results = await fetch_calendar_signals(state)
+        state.raw_signals.extend(results)
         print("[DEBUG] cal fetch end")
 
     if not state.raw_signals:
@@ -47,7 +47,7 @@ def fetch_signals(state: DAAState) -> DAAState:
     return state
 
 
-def rule_scoring(state: DAAState) -> DAAState:
+async def rule_scoring(state: DAAState) -> DAAState:
     """
     Deterministic scoring (rules first, always).
     """
@@ -61,7 +61,7 @@ def rule_scoring(state: DAAState) -> DAAState:
     return state
 
 
-def llm_optional(state: DAAState) -> DAAState:
+async def llm_optional(state: DAAState) -> DAAState:
 
     emails_for_llm = []
 
@@ -78,7 +78,8 @@ def llm_optional(state: DAAState) -> DAAState:
         emails_for_llm.append(item)
 
     if emails_for_llm:
-
+        # Keeping generate_email_briefs as sync for now, but nodes are async.
+        # Ideally generate_email_briefs should be async too.
         results = generate_email_briefs(emails_for_llm)
 
         for item in state.scored_items:
@@ -92,7 +93,7 @@ def llm_optional(state: DAAState) -> DAAState:
     return state
 
 
-def guardrails(state: DAAState) -> DAAState:
+async def guardrails(state: DAAState) -> DAAState:
     """
     Hard stop if any rule is violated.
     """
@@ -111,10 +112,10 @@ def build_graph():
 
     # Nodes
     graph.add_node("fetch_signals", fetch_signals)
-    graph.add_node("normalize", normalize_signals)
+    graph.add_node("normalize", normalize_signals) # normalize_signals is still sync, which is fine
     graph.add_node("score", rule_scoring)
     graph.add_node("llm_optional", llm_optional)
-    graph.add_node("generate_brief", generate_brief)
+    graph.add_node("generate_brief", generate_brief) # generator is sync
     graph.add_node("guardrails", guardrails)
 
     # Entry
