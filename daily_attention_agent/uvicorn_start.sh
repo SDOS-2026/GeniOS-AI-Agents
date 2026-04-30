@@ -1,1 +1,2 @@
-source ./venv/bin/activate\nuvicorn app.api.main:app --reload
+#!/bin/bash
+source ./venv/bin/activate && uvicorn app.api.main:app --reload --port 8001

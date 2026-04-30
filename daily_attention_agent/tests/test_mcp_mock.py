@@ -33,7 +33,7 @@ async def test_fetch_gmail_signals_with_mock_mcp():
         user_id="test",
         workspace_id="test",
         time_window={"start": "2026-04-18T00:00:00Z", "end": "2026-04-20T00:00:00Z"},
-        raw_metadata={"mcp_session": mcp_session}
+        mcp_session=mcp_session,
     )
     
     result = await fetch_gmail_signals(state)
@@ -52,7 +52,7 @@ async def test_fetch_calendar_signals_with_mock_mcp():
         user_id="test",
         workspace_id="test",
         time_window={"start": "2026-04-18T00:00:00Z", "end": "2026-04-20T00:00:00Z"},
-        raw_metadata={"mcp_session": mcp_session}
+        mcp_session=mcp_session,
     )
     
     result = await fetch_calendar_signals(state)
