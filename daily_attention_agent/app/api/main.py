@@ -18,4 +18,4 @@ app.include_router(agent.router)
 
 @app.get("/")
 def read_root():
-    return {"message": "Daily Attention Agent is running. Connect your MCP server and hit /agent/run."}
+    return {"message": "Daily Attention Agent service is running. POST to /run to execute."}

@@ -1,29 +1,68 @@
 import os
 import pytest
 import asyncio
-from mcp import ClientSession
-from mcp.client.sse import sse_client
 from app.connectors.gmail.fetch import fetch_gmail_signals
 from app.connectors.calendar.fetch import fetch_calendar_signals
 from app.core.state import DAAState
+from app.services.mcp_client import MCPHttpAdapter
 from dotenv import load_dotenv
 
 load_dotenv()
 
 @pytest.mark.asyncio
-async def test_mcp_real_server_integration():
+async def test_mcp_server_integration():
+    """
+    Integration test against the self-hosted MCP server.
+    Requires the MCP server to be running on MCP_SERVER_URL.
+    """
+    url = os.getenv("MCP_SERVER_URL")
+    if not url:
+        pytest.skip("MCP_SERVER_URL not set")
+
+    print(f"[DEBUG] Connecting to MCP Server at {url}...")
+    adapter = MCPHttpAdapter(base_url=url)
+
+    state = DAAState(
+        user_id="integration-test-user",
+        workspace_id="test-workspace",
+        time_window={
+            "start": "2026-04-18T00:00:00Z",
+            "end": "2026-04-20T00:00:00Z"
+        },
+        mcp_session=adapter,
+    )
+
+    # Test Gmail fetch (real request)
+    gmail_results = await fetch_gmail_signals(state)
+    print(f"Gmail results: {len(gmail_results)}")
+    assert isinstance(gmail_results, list)
+
+    # Test Calendar fetch (real request)
+    calendar_results = await fetch_calendar_signals(state)
+    print(f"Calendar results: {len(calendar_results)}")
+    assert isinstance(calendar_results, list)
+
+
+@pytest.mark.asyncio
+async def test_mcp_zapier_integration():
+    """
+    Legacy integration test against the Zapier MCP SSE server.
+    Kept for backward compatibility testing.
+    Requires ZAPIER_MCP_SERVER_URL to be set.
+    """
     url = os.getenv("ZAPIER_MCP_SERVER_URL")
     if not url:
-        pytest.skip("ZAPIER_MCP_SERVER_URL not set")
+        pytest.skip("ZAPIER_MCP_SERVER_URL not set — skipping Zapier legacy test")
 
-    print(f"[DEBUG] Connecting to MCP at {url}...")
+    from mcp import ClientSession
+    from mcp.client.sse import sse_client
+
+    print(f"[DEBUG] Connecting to Zapier MCP at {url}...")
     async with sse_client(url=url) as (read, write):
-        print("[DEBUG] SSE Client context entered.")
         async with ClientSession(read, write) as session:
-            print("[DEBUG] Client Session wrapper started. Initializing...")
             await session.initialize()
-            print("[DEBUG] Session initialized successfully.")
-            
+            print("[DEBUG] Zapier MCP session initialized.")
+
             state = DAAState(
                 user_id="integration-test-user",
                 workspace_id="test-workspace",
@@ -31,15 +70,13 @@ async def test_mcp_real_server_integration():
                     "start": "2026-04-18T00:00:00Z",
                     "end": "2026-04-20T00:00:00Z"
                 },
-                raw_metadata={"mcp_session": session}
+                mcp_session=session,
             )
 
-            # Test Gmail fetch (real request)
             gmail_results = await fetch_gmail_signals(state)
             print(f"Gmail results: {len(gmail_results)}")
             assert isinstance(gmail_results, list)
 
-            # Test Calendar fetch (real request)
             calendar_results = await fetch_calendar_signals(state)
             print(f"Calendar results: {len(calendar_results)}")
             assert isinstance(calendar_results, list)

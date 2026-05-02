@@ -5,8 +5,9 @@ from pydantic import BaseModel
 
 from app.core.runner import run_daily_attention_agent
 from app.services.run_store import run_store
+from app.services.mcp_client import MCPConnectionManager
 
-router = APIRouter(prefix="/agent")
+router = APIRouter()
 
 class RunRequest(BaseModel):
     user_id: str
@@ -16,15 +17,14 @@ class RunRequest(BaseModel):
     depth_mode: str = "quick"
     output_mode: str = "brief_only"
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 
 @router.post("/run")
-async def run_agent(request: Request, run_request: RunRequest, background_tasks: BackgroundTasks):
+async def run_agent(run_request: RunRequest, background_tasks: BackgroundTasks):
     run_id = str(uuid.uuid4())
     run_store[run_id] = {"status": "running", "result": None}
-    
-    # Retrieve mcp_session from app state
-    mcp_session = getattr(request.app.state, "mcp_session", None)
+
+    # Explicit DI — no hidden framework coupling
+    mcp_session = MCPConnectionManager.get_session()
 
     async def execute_and_store():
         try:
