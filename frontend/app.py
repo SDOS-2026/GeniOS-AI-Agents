@@ -53,6 +53,13 @@ if st.button("🚀 Run Agent", type="primary"):
     
     try:
         response = requests.post(DAA_RUN_URL, json=payload)
+        
+        if response.status_code != 200:
+            st.error(f"Gateway returned Error {response.status_code}")
+            # .text will handle the decompression that .json() fails at
+            st.code(response.text) 
+            st.stop()
+            
         response.raise_for_status()
         run_data = response.json()
         run_id = run_data.get("run_id")
