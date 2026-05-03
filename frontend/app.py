@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 import time
+import json
+from datetime import datetime
 
 # Gateway Configuration
 GATEWAY_URL = "http://localhost:8000"
@@ -28,6 +30,47 @@ keywords_input = st.sidebar.text_area("Keywords (comma separated)", value="urgen
 st.sidebar.subheader("Execution Options")
 depth_mode = st.sidebar.selectbox("Depth Mode", ["quick", "deep"])
 output_mode = st.sidebar.selectbox("Output Mode", ["brief_only", "full_report"])
+
+def render_feedback_section():
+    st.markdown("---")
+    st.subheader("📝 Help Us Improve")
+    with st.expander("Provide Anonymous Feedback", expanded=False):
+        with st.form("feedback_form"):
+            st.write("Your feedback is saved anonymously and helps us improve the Daily Attention Agent.")
+            rating = st.slider("How would you rate your experience?", 1, 5, 5)
+            comments = st.text_area("What features would you like to see or what could be improved?")
+            
+            submitted = st.form_submit_button("Submit Feedback")
+            if submitted:
+                # --- Supabase Configuration ---
+                # Replace these with your actual Supabase project URL and Anon Key
+                SUPABASE_URL = "https://nklvdwywvabddoemmadh.supabase.co/rest/v1/feedback"
+                SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rbHZkd3l3dmFiZGRvZW1tYWRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNDMwNTYsImV4cCI6MjA4NDcxOTA1Nn0.Q7BBC9j_P3SzGll2q6wZMWef05_xpDqAY9jGWKYkmz0"
+                
+                payload = {
+                    "rating": rating,
+                    "comments": comments.strip()
+                }
+                
+                # Prevent sending if placeholders are not updated
+                if not SUPABASE_URL or "YOUR_PROJECT_REF" in SUPABASE_URL:
+                    st.warning("Feedback not sent: Supabase credentials are not configured yet. Please update app.py.")
+                else:
+                    headers = {
+                        "apikey": SUPABASE_ANON_KEY,
+                        "Authorization": f"Bearer {SUPABASE_ANON_KEY}",
+                        "Content-Type": "application/json"
+                    }
+                    
+                    try:
+                        response = requests.post(SUPABASE_URL, headers=headers, json=payload)
+                        response.raise_for_status()
+                        st.success("Thank you! Your feedback has been sent to the developers securely.")
+                    except requests.exceptions.HTTPError as e:
+                        error_msg = response.text
+                        st.error(f"Failed to send feedback: {e}\n\nDetails: {error_msg}")
+                    except Exception as e:
+                        st.error(f"Failed to send feedback: {str(e)}")
 
 # --- Main Area ---
 
@@ -120,3 +163,5 @@ if st.button("🚀 Run Agent", type="primary"):
     except requests.exceptions.RequestException as e:
         st.error(f"Failed to connect to GeniOS Gateway: {e}")
         st.info("Ensure that the Gateway service is running on port 8000.")
+
+render_feedback_section()
