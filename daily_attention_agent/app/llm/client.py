@@ -15,7 +15,7 @@ if not GEMINI_API_KEY:
 if not GEMINI_MODEL:
     raise RuntimeError("GEMINI_MODEL missing from .env")
 
-from app.models.llm_output import BatchScoredResponse, ScoredItem
+from daily_attention_agent.app.models.llm_output import BatchScoredResponse, ScoredItem
 from pydantic import ValidationError
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -80,7 +80,7 @@ def groq_email_brief(prompt: str) -> Optional[dict]:
         )
         text = chat_completion.choices[0].message.content
         data = json.loads(text)
-        from app.models.llm_output import EmailBrief
+        from daily_attention_agent.app.models.llm_output import EmailBrief
         validated = EmailBrief(**data)
         return validated.model_dump()
     except Exception as e:

@@ -3,10 +3,10 @@
 from typing import List, Tuple
 from datetime import datetime, timedelta, timezone
 
-from app.models.unified_signal import UnifiedSignal
+from daily_attention_agent.app.models.unified_signal import UnifiedSignal
 
 
-from app.llm.client import gemini_gmail_batch_priority
+from daily_attention_agent.app.llm.client import gemini_gmail_batch_priority
 
 
 def apply_email_rules(

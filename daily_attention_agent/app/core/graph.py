@@ -1,22 +1,22 @@
 # app/graph.py
 
 from langgraph.graph import StateGraph, END
-from app.core.state import DAAState
+from daily_attention_agent.app.core.state import DAAState
 
 # ---- Import node functions (to be implemented next) ----
-from app.connectors.gmail.fetch import fetch_gmail_signals
-from app.connectors.calendar.fetch import fetch_calendar_signals
+from daily_attention_agent.app.connectors.gmail.fetch import fetch_gmail_signals
+from daily_attention_agent.app.connectors.calendar.fetch import fetch_calendar_signals
 
-from app.rules.scoring import score_signals
-from app.brief.generator import generate_brief
+from daily_attention_agent.app.rules.scoring import score_signals
+from daily_attention_agent.app.brief.generator import generate_brief
 
-from app.guardrails.validate_schema import validate_schema
-from app.guardrails.validate_evidence import validate_evidence
-from app.guardrails.no_side_effects import validate_no_side_effects
+from daily_attention_agent.app.guardrails.validate_schema import validate_schema
+from daily_attention_agent.app.guardrails.validate_evidence import validate_evidence
+from daily_attention_agent.app.guardrails.no_side_effects import validate_no_side_effects
 
-from app.llm.drafts import generate_drafts_if_enabled
-from app.llm.email_brief import generate_email_briefs
-from app.connectors.normalize import normalize_signals
+from daily_attention_agent.app.llm.drafts import generate_drafts_if_enabled
+from daily_attention_agent.app.llm.email_brief import generate_email_briefs
+from daily_attention_agent.app.connectors.normalize import normalize_signals
 
 
 

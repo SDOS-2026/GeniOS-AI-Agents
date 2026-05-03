@@ -3,7 +3,7 @@
 from typing import List
 from datetime import datetime, timezone
 from datetime import timedelta
-from app.models.unified_signal import UnifiedSignal
+from daily_attention_agent.app.models.unified_signal import UnifiedSignal
 
 
 def _parse_event_timestamp(event: dict) -> datetime:

@@ -4,7 +4,7 @@ G1: PII and Confidential Data Detection
 import logging
 import re
 from typing import List, Tuple
-from app.classification.models import ProcessedEmail, SecurityFlag
+from EmailAgent.app.classification.models import ProcessedEmail, SecurityFlag
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class PIIDetector:
         detected = []
         
         # Scan email content
-        text = f"{email.metadata.subject}\n{email.metadata.body_text}"
+        text = f"{email.metadata.subject}\n{email.metadata.body}"
         
         # Check for PII patterns
         for pii_type, pattern in self.patterns.items():

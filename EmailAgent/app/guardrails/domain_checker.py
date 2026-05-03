@@ -3,8 +3,8 @@ G2: Domain Restriction Check
 """
 import logging
 from typing import List
-from app.classification.config import Config
-from app.classification.models import ProcessedEmail, SecurityFlag
+from EmailAgent.app.classification.config import Config
+from EmailAgent.app.classification.models import ProcessedEmail, SecurityFlag
 
 logger = logging.getLogger(__name__)
 

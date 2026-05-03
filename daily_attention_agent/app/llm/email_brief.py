@@ -1,6 +1,6 @@
-from app.llm.client import get_llm, GEMINI_MODEL
+from daily_attention_agent.app.llm.client import get_llm, GEMINI_MODEL
 import json
-from app.models.llm_output import EmailBrief
+from daily_attention_agent.app.models.llm_output import EmailBrief
 from pydantic import ValidationError
 
 def generate_email_briefs(items):
@@ -47,7 +47,7 @@ def generate_email_briefs(items):
 
         except Exception as e:
             print(f"[WARNING] Gemini briefing failed for {signal.record_id}, falling back to Groq: {e}")
-            from app.llm.client import groq_email_brief
+            from daily_attention_agent.app.llm.client import groq_email_brief
             fallback_brief = groq_email_brief(prompt)
             
             if fallback_brief:

@@ -1,6 +1,6 @@
 # app/guardrails/no_side_effects.py
 
-from app.core.state import DAAState
+from daily_attention_agent.app.core.state import DAAState
 
 
 FORBIDDEN_ACTION_WORDS = [

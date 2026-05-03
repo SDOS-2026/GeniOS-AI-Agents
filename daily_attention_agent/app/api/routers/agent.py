@@ -3,9 +3,9 @@ from typing import List, Optional
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel
 
-from app.core.runner import run_daily_attention_agent
-from app.services.run_store import run_store
-from app.services.mcp_client import MCPConnectionManager
+from daily_attention_agent.app.core.runner import run_daily_attention_agent
+from daily_attention_agent.app.services.run_store import run_store
+from daily_attention_agent.app.services.mcp_client import MCPConnectionManager
 
 router = APIRouter()
 

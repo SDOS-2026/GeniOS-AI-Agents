@@ -3,7 +3,7 @@
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime, timezone
-from app.models.unified_signal import UnifiedSignal
+from daily_attention_agent.app.models.unified_signal import UnifiedSignal
 
 
 class DAAState(BaseModel):

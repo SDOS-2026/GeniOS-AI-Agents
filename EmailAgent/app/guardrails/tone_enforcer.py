@@ -4,7 +4,7 @@ G3: Safe Tone Enforcement
 import logging
 import re
 from typing import List, Tuple
-from app.classification.models import ProcessedEmail, SecurityFlag
+from EmailAgent.app.classification.models import ProcessedEmail, SecurityFlag
 
 logger = logging.getLogger(__name__)
 

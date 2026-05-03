@@ -1,10 +1,10 @@
 import os
 import pytest
 import asyncio
-from app.connectors.gmail.fetch import fetch_gmail_signals
-from app.connectors.calendar.fetch import fetch_calendar_signals
-from app.core.state import DAAState
-from app.services.mcp_client import MCPHttpAdapter
+from daily_attention_agent.app.connectors.gmail.fetch import fetch_gmail_signals
+from daily_attention_agent.app.connectors.calendar.fetch import fetch_calendar_signals
+from daily_attention_agent.app.core.state import DAAState
+from daily_attention_agent.app.services.mcp_client import MCPHttpAdapter
 from dotenv import load_dotenv
 
 load_dotenv()

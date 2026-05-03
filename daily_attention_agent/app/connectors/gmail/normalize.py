@@ -4,7 +4,7 @@ from typing import List
 from datetime import datetime
 from email.utils import parsedate_to_datetime
 
-from app.models.unified_signal import UnifiedSignal
+from daily_attention_agent.app.models.unified_signal import UnifiedSignal
 
 
 def normalize_gmail_threads(raw_threads: List[dict]) -> List[UnifiedSignal]:

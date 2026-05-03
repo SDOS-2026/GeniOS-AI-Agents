@@ -2,9 +2,9 @@ import pytest
 import json
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
-from app.connectors.gmail.fetch import fetch_gmail_signals
-from app.connectors.calendar.fetch import fetch_calendar_signals
-from app.core.state import DAAState
+from daily_attention_agent.app.connectors.gmail.fetch import fetch_gmail_signals
+from daily_attention_agent.app.connectors.calendar.fetch import fetch_calendar_signals
+from daily_attention_agent.app.core.state import DAAState
 
 class MockContent:
     def __init__(self, text):
