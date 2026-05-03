@@ -1,3 +1,4 @@
+from asyncio.log import logger
 import uuid
 from typing import List, Optional
 from fastapi import APIRouter, BackgroundTasks, HTTPException
@@ -20,42 +21,47 @@ class RunRequest(BaseModel):
 
 @router.post("/run")
 async def run_agent(run_request: RunRequest, background_tasks: BackgroundTasks):
-    run_id = str(uuid.uuid4())
-    run_store[run_id] = {"status": "running", "result": None}
+    try:
+        run_id = str(uuid.uuid4())
+        run_store[run_id] = {"status": "running", "result": None}
 
-    # Explicit DI — no hidden framework coupling
-    mcp_session = MCPConnectionManager.get_session()
+        # Explicit DI — no hidden framework coupling
+        mcp_session = MCPConnectionManager.get_session()
 
-    async def execute_and_store():
-        try:
-            print(f"[INFO] Starting agent run: {run_id}")
-            result = await run_daily_attention_agent(
-                payload=run_request.model_dump(),
-                mcp_session=mcp_session,
-            )
-            run_store[run_id]["status"] = "success"
-            
-            # extract serializable parts for basic API response
-            safe_result = {
-                "attention_items": result.get("attention_items", []),
-                "risks": result.get("risks", []),
-                "opportunities": result.get("opportunities", []),
-                "warnings": result.get("warnings", []),
-                "run_completed_at": result.get("run_completed_at")
-            }
-            run_store[run_id]["result"] = safe_result
-            print(f"[INFO] Agent run {run_id} completed successfully.")
-        except Exception as e:
-            import traceback
-            error_msg = f"Error during agent execution: {str(e)}"
-            print(f"[ERROR] Agent run {run_id} failed: {error_msg}")
-            print(traceback.format_exc())
-            run_store[run_id]["status"] = "error"
-            run_store[run_id]["result"] = error_msg
+        async def execute_and_store():
+            try:
+                print(f"[INFO] Starting agent run: {run_id}")
+                result = await run_daily_attention_agent(
+                    payload=run_request.model_dump(),
+                    mcp_session=mcp_session,
+                )
+                run_store[run_id]["status"] = "success"
+                
+                # extract serializable parts for basic API response
+                safe_result = {
+                    "attention_items": result.get("attention_items", []),
+                    "risks": result.get("risks", []),
+                    "opportunities": result.get("opportunities", []),
+                    "warnings": result.get("warnings", []),
+                    "run_completed_at": result.get("run_completed_at")
+                }
+                run_store[run_id]["result"] = safe_result
+                print(f"[INFO] Agent run {run_id} completed successfully.")
+            except Exception as e:
+                import traceback
+                error_msg = f"Error during agent execution: {str(e)}"
+                print(f"[ERROR] Agent run {run_id} failed: {error_msg}")
+                print(traceback.format_exc())
+                run_store[run_id]["status"] = "error"
+                run_store[run_id]["result"] = error_msg
 
 
-    background_tasks.add_task(execute_and_store)
-    return {"run_id": run_id, "status": "running"}
+        background_tasks.add_task(execute_and_store)
+        return {"run_id": run_id, "status": "running"}
+    except Exception as e:
+        print(f"CRITICAL SYSTEM ERROR: {e}")
+        logger.error(f"CRITICAL SYSTEM ERROR: {e}", exc_info=True)
+        return {"error": str(e)}
 
 
 @router.get("/status/{run_id}")
