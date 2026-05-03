@@ -15,6 +15,7 @@ def review_node(state):
     # Interrupt — let the frontend display the draft and collect decision
     resume = interrupt({
         "interrupt_type": "draft_review",
+        "message": "I have prepared a draft for you. Please review it before I send it.",
         "draft": {
             "to": recipients.get("to", []),
             "cc": recipients.get("cc", []),
@@ -24,6 +25,7 @@ def review_node(state):
         },
         "reasoning": reasoning,
     })
+
     # resume = {"decision": "SEND"} | {"decision": "EDIT", "edit_instructions": "..."} | {"decision": "CANCEL"}
 
     decision = resume.get("decision", "CANCEL")

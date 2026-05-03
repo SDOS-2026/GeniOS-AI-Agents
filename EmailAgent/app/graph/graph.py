@@ -185,7 +185,7 @@ async def initialise_graph():
             pool = AsyncConnectionPool(
                 conninfo=db_uri,
                 max_size=10,
-                kwargs={"autocommit": True},
+                kwargs={"autocommit": True, "prepare_threshold": None},
                 open=False
             )
             await pool.open()

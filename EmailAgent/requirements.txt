@@ -1,34 +1,14 @@
-# Core
-requests==2.32.5
-python-dotenv==1.2.1
-
-# LangGraph
-langgraph==1.0.6
-langgraph-checkpoint==4.0.0
-langgraph-prebuilt==1.0.6
-langgraph-sdk==0.3.3
-langchain-core==1.2.7
-
-# LangGraph Checkpointer (Postgres)
-langgraph-checkpoint-postgres>=0.1.0
-psycopg[binary,pool]>=3.1.0
-
-# Google Auth / Gmail API
-google-auth==2.47.0
-google-auth-oauthlib==1.2.4
-google-auth-httplib2==0.3.0
-google-api-python-client==2.188.0
-
-# Gemini / Google GenAI
-google-genai==1.59.0
-
-
-# Superbase
-supabase==2.27.2
-
-# FastAPI
-fastapi>=0.100.0
-uvicorn>=0.22.0
-
-# UI
-streamlit>=1.37.0
+fastapi==0.136.1
+google_api_python_client==2.188.0
+google_auth_oauthlib==1.2.4
+groq==1.2.0
+httpx==0.28.1
+langgraph==1.1.10
+protobuf==7.34.1
+psycopg==3.3.4
+psycopg_pool==3.3.1
+pydantic==2.13.3
+pytest==9.0.3
+python-dotenv==1.2.2
+Requests==2.33.1
+supabase==2.29.0

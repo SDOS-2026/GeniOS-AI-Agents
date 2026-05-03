@@ -19,10 +19,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+from app.mcp_client import initialize_mcp_client
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: initialise graph + checkpointer. Shutdown: cleanup."""
     logger.info("[EmailAgent] Starting up...")
+    initialize_mcp_client()
     await initialise_graph()
     logger.info("[EmailAgent] Service ready.")
     yield

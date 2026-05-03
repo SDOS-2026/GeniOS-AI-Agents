@@ -115,4 +115,10 @@ bash run_tests.sh
 
 ---
 
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
 *GeniOS: Intelligence where it matters most.*

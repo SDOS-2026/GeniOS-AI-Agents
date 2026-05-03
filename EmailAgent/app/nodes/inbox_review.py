@@ -67,8 +67,10 @@ def inbox_review_node(state):
     # 3. Interrupt — wait for user selection
     resume = interrupt({
         "interrupt_type": "inbox_review",
+        "message": "I found these emails in your inbox. Please select one to proceed.",
         "emails": email_summaries,
     })
+
     # resume = {"email_index": 2, "action": "REPLY"} | {"action": "DONE"}
 
     action = resume.get("action", "DONE")
@@ -93,7 +95,7 @@ def inbox_review_node(state):
         "current_email_index": idx,
         "selected_email": selected_email,
         "raw_thread": selected_email,
-        "summary": selected_email,
+        "summary": f"Email from {selected_email.get('from', 'Unknown')} — {selected_email.get('subject', 'No Subject')}",
         "reply_message_id": selected_email.get("message_id"),
         "recipient": recipient,
         "user_action": action,  # "SUMMARIZE" | "REPLY" | "DONE"

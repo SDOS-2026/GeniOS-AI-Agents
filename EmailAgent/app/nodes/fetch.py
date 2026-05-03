@@ -1,19 +1,18 @@
-from app.gmail.client import get_gmail_service
-from app.gmail.fetch import fetch_recent_emails
+import json
+import logging
+from app.mcp_client import get_mcp_client
 
-def fetch_node(state):
+logger = logging.getLogger(__name__)
+
+async def fetch_node(state):
     """
-    Fetches emails from Gmail API based on filters in state.
+    Fetches emails from Gmail via the MCP Server based on filters in state.
+    Returns a partial state update.
     """
     filters = state.get("filter_criteria", {})
     limit = filters.get("limit")
     if limit is None:
         limit = 5
-    
-    # Check if we should filter by unread/time_range? 
-    # Current fetch_recent_emails is basic. We pass limit.
-    # Advanced filtering logic can be added to fetch_recent_emails later 
-    # or filtered in-memory here/classify node.
     
     # If filtering by priority, fetch more to increase chance of finding matches
     target_priority = filters.get("priority", "ANY")
@@ -21,14 +20,27 @@ def fetch_node(state):
     if target_priority != "ANY":
         fetch_limit = max(limit * 3, 20) # Fetch at least 20 or 3x request
         
-    print(f"DEBUG: Fetching {fetch_limit} emails (Limit: {limit})...")
+    logger.info(f"[FetchNode] Fetching {fetch_limit} emails via MCP (Limit: {limit})...")
     
     try:
-        service = get_gmail_service()
-        emails = fetch_recent_emails(service, max_results=fetch_limit)
+        mcp = get_mcp_client()
+        result = await mcp.call_tool("gmail_fetch_messages", {
+            "query": "in:inbox",
+            "maxResults": fetch_limit
+        })
+
+        if result.is_error:
+            error_text = result.content[0].text if result.content else "Unknown error"
+            logger.error(f"[FetchNode] MCP error fetching emails: {error_text}")
+            emails = []
+        else:
+            json_text = result.content[0].text if result.content else "[]"
+            emails = json.loads(json_text)
+            
+        logger.info(f"[FetchNode] Successfully fetched {len(emails)} emails.")
+            
     except Exception as e:
-        print(f"Error fetching emails: {e}")
+        logger.exception(f"[FetchNode] Exception fetching emails: {e}")
         emails = []
         
-    state["emails"] = emails
-    return state
+    return {"emails": emails}

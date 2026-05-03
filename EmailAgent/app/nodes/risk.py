@@ -33,5 +33,4 @@ def risk_node(state):
     if any(k in body for k in pii_keywords):
         flags.append("PII_DETECTED")
 
-    state["risk_flags"] = list(set(flags))  # deduplicate
-    return state
+    return {"risk_flags": list(set(flags))}  # deduplicate, partial state update

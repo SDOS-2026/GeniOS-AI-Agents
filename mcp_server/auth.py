@@ -15,9 +15,11 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 
 logger = logging.getLogger(__name__)
 
-# Scopes required for Gmail (read-only) and Calendar (read-only)
+# Scopes required for Gmail (read + send) and Calendar (read-only)
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.compose",
+    "https://www.googleapis.com/auth/gmail.send",
     "https://www.googleapis.com/auth/calendar.readonly",
 ]
 

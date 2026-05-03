@@ -85,7 +85,7 @@ def apply_email_batch(signals, cache, vip_senders, keywords):
         return
 
     try:
-        results = gemini_gmail_batch_priority(uncached_signals)
+        results = gemini_gmail_batch_priority(uncached_signals, keywords=keywords)
 
         for s in uncached_signals:
             cache_key = f"{s.record_id}_{s.timestamp.isoformat()}"

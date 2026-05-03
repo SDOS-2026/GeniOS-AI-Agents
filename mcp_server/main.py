@@ -107,10 +107,13 @@ class ToolResponse(BaseModel):
 
 from mcp_server.tools.gmail import handle_gmail_search
 from mcp_server.tools.calendar import handle_calendar_get_events
+from mcp_server.tools.email import handle_gmail_fetch_messages, handle_gmail_send
 
 TOOL_REGISTRY = {
     "gmail_search": handle_gmail_search,
     "calendar_get_events": handle_calendar_get_events,
+    "gmail_fetch_messages": handle_gmail_fetch_messages,
+    "gmail_send": handle_gmail_send,
 }
 
 

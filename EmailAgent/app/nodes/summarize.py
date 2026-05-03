@@ -55,8 +55,10 @@ Email thread:
     # Interrupt — let the frontend display the summary and acknowledge
     interrupt({
         "interrupt_type": "summarize_ack",
+        "message": "I have summarized the email for you.",
         "summary": summary,
     })
+
     # resume value is ignored — any response continues the graph
 
     return {"summary": summary, "interrupt_type": "summarize_ack"}

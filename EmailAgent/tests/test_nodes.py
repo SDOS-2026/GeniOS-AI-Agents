@@ -167,28 +167,48 @@ class TestDraftNode:
 
 class TestSendNode:
 
-    @patch("EmailAgent.app.nodes.send.get_gmail_service")
-    @patch("EmailAgent.app.nodes.send.send_email")
-    def test_send_node_calls_send_email(self, mock_send, mock_service):
+    @pytest.mark.asyncio
+    @patch("EmailAgent.app.nodes.send.get_mcp_client")
+    async def test_send_node_calls_mcp_client(self, mock_get_client):
         from EmailAgent.app.nodes.send import send_node
 
-        mock_service.return_value = MagicMock()
+        mock_client = MagicMock()
+        mock_client.call_tool = MagicMock(return_value=MagicMock(is_error=False, content=[]))
+        mock_get_client.return_value = mock_client
+        
+        # mock_client.call_tool needs to be an AsyncMock, but since Python 3.8 AsyncMock is available.
+        # To avoid importing AsyncMock explicitly, we can just set a side_effect that returns a future or use AsyncMock
+        from unittest.mock import AsyncMock
+        mock_client.call_tool = AsyncMock(return_value=MagicMock(is_error=False, content=[]))
+
         state = _base_state(
             recipient={"to": ["user@example.com"], "cc": [], "bcc": []},
             subject="Test",
             draft="Hello there",
         )
 
-        send_node(state)
-        mock_send.assert_called_once()
+        result = await send_node(state)
+        mock_client.call_tool.assert_called_once_with("gmail_send", {
+            "to": "user@example.com",
+            "subject": "Test",
+            "body": "Hello there",
+            "cc": None,
+            "bcc": None,
+            "thread_id": "test_thread",
+            "in_reply_to": None,
+            "references": None
+        })
+        assert result["sent"] is True
 
-    @patch("EmailAgent.app.nodes.send.get_gmail_service")
-    @patch("EmailAgent.app.nodes.send.send_email")
-    def test_send_node_does_not_crash_on_service_error(self, mock_send, mock_service):
+    @pytest.mark.asyncio
+    @patch("EmailAgent.app.nodes.send.get_mcp_client")
+    async def test_send_node_handles_mcp_error(self, mock_get_client):
         from EmailAgent.app.nodes.send import send_node
+        from unittest.mock import AsyncMock
 
-        mock_service.return_value = MagicMock()
-        mock_send.side_effect = Exception("SMTP timeout")
+        mock_client = MagicMock()
+        mock_client.call_tool = AsyncMock(return_value=MagicMock(is_error=True, content=[MagicMock(text="API error")]))
+        mock_get_client.return_value = mock_client
 
         state = _base_state(
             recipient={"to": ["user@example.com"], "cc": [], "bcc": []},
@@ -196,8 +216,9 @@ class TestSendNode:
             draft="Hello",
         )
 
-        result = send_node(state)
-        assert result is not None
+        result = await send_node(state)
+        assert result["sent"] is False
+        assert "API error" in result["reasoning"][0]
 
 
 # ==============================================================

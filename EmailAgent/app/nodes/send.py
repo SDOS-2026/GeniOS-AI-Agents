@@ -1,82 +1,78 @@
-from app.gmail.send import send_email
-from app.gmail.client import get_gmail_service
-from app.utils.reasoning import add_reasoning
+import logging
+from app.mcp_client import get_mcp_client
 
-def send_node(state):
+logger = logging.getLogger(__name__)
+
+
+def _validate_recipients(recipients: dict) -> str | None:
     """
-    Executes the email send action.
+    Validate recipient lists. Returns an error message string if invalid,
+    or None if everything is OK.
     """
-    print("\nSending email...")
-    
-    # Check if we have real credentials/service (simulated if not available is fine for now, 
-    # but based on previous code we have get_gmail_service)
+    to_list = recipients.get("to", [])
+    cc_list = recipients.get("cc", [])
+    bcc_list = recipients.get("bcc", [])
+
+    if not isinstance(to_list, list) or not isinstance(cc_list, list) or not isinstance(bcc_list, list):
+        return "Recipient fields must be lists"
+
+    if not to_list:
+        return "No recipients specified in 'to' field"
+
+    overlap_to_cc = set(to_list) & set(cc_list)
+    overlap_to_bcc = set(to_list) & set(bcc_list)
+    overlap_cc_bcc = set(cc_list) & set(bcc_list)
+
+    if overlap_to_cc or overlap_to_bcc or overlap_cc_bcc:
+        overlaps = overlap_to_cc | overlap_to_bcc | overlap_cc_bcc
+        return f"Recipient overlap detected: {', '.join(overlaps)}"
+
+    return None
+
+
+async def send_node(state):
+    """
+    Executes the email send action via the MCP Server.
+    Returns a partial state update (never the full state).
+    """
+    logger.info("[SendNode] Preparing to send email...")
+
+    recipients = state.get("recipient") or {"to": [], "cc": [], "bcc": []}
+
+    # Validate recipients — return error state instead of crashing
+    error = _validate_recipients(recipients)
+    if error:
+        logger.error(f"[SendNode] Validation failed: {error}")
+        return {"sent": False, "reasoning": [f"Send blocked: {error}"]}
+
+    to_list = recipients.get("to", [])
+    cc_list = recipients.get("cc", [])
+    bcc_list = recipients.get("bcc", [])
+
+    logger.info(f"[SendNode] To: {to_list}, Subject: {state.get('subject')}")
+
     try:
-        service = get_gmail_service()
-        print("Service found successfully")
+        mcp = get_mcp_client()
+        result = await mcp.call_tool("gmail_send", {
+            "to": ", ".join(to_list),
+            "subject": state.get("subject", ""),
+            "body": state.get("draft", ""),
+            "cc": ", ".join(cc_list) if cc_list else None,
+            "bcc": ", ".join(bcc_list) if bcc_list else None,
+            "thread_id": state.get("thread_id"),
+            "in_reply_to": state.get("reply_message_id"),
+            "references": state.get("reply_message_id"),
+        })
 
-        recipients = state.get("recipient") or {"to": [], "cc": [], "bcc": []}
+        # Check if MCP returned an error
+        if result.is_error:
+            error_text = result.content[0].text if result.content else "Unknown MCP error"
+            logger.error(f"[SendNode] MCP send failed: {error_text}")
+            return {"sent": False, "reasoning": [f"Send failed: {error_text}"]}
 
-        to_list = recipients.get("to", [])
-        cc_list = recipients.get("cc", [])
-        bcc_list = recipients.get("bcc", [])
-        
-        # 🔒 Invariants
-        assert isinstance(to_list, list)
-        assert isinstance(cc_list, list)
-        assert isinstance(bcc_list, list)
-        assert not (set(to_list) & set(cc_list) or
-                    set(to_list) & set(bcc_list) or
-                    set(cc_list) & set(bcc_list)), \
-            "Recipient overlap between to/cc/bcc"
-
-        to_str = ", ".join(to_list)
-        cc_str = ", ".join(cc_list) if cc_list else None
-        bcc_str = ", ".join(bcc_list) if bcc_list else None
-
-        print("To:", to_str)
-        print("Subject:", state.get("subject"))
-        print("CC:", cc_str)
-        print("BCC:", bcc_str)
-
-        if state.get("attachments"):
-            add_reasoning(state, "SUser approved the draft. Sending email with final recipients and attachments.")
-        else:
-            add_reasoning(state, "User approved the draft. Sending email with final recipients.")
-
-        if state.get("show_reasoning"):
-            print("\n--- REASONING ---")
-        for line in state.get("reasoning", []):
-            print(f"- {line}")
-        print("-----------------\n")
-
-        send_email(
-            service=service,
-            to=to_str,
-            subject=state.get("subject"),
-            body=state.get("draft"),
-            approval_status="APPROVED",
-            cc=cc_str,
-            bcc=bcc_str,
-            attachments=state.get("attachments"),
-            thread_id=state.get("thread_id"),
-            in_reply_to=state.get("reply_message_id"),
-            references=state.get("reply_message_id"),
-        )
-
-        # print("✅ Email sent successfully.")
-        add_reasoning(state, "Email sent.")
-
-        if state.get("show_reasoning"):
-            print("\n--- REASONING ---")
-        for line in state.get("reasoning", []):
-            print(f"- {line}")
-        print("-----------------\n")
-
-        # Optionally clear reasoning so next session starts fresh:
-        state["reasoning"] = []
+        logger.info("[SendNode] Email sent successfully.")
+        return {"sent": True, "reasoning": ["Email sent."]}
 
     except Exception as e:
-        print(f"❌ Failed to send email: {e}")
-        # In a real app we might want to loop back to review on failure
-        
-    return state
+        logger.exception(f"[SendNode] Failed to send email: {e}")
+        return {"sent": False, "reasoning": [f"Send failed: {e}"]}

@@ -7,12 +7,12 @@ load_dotenv()
 
 _client = None
 
-
 def _get_client():
   global _client
   if _client is not None:
     return _client
 
+  load_dotenv()
   api_key = os.getenv("GEMINI_API_KEY")
   if not api_key:
     raise RuntimeError("GEMINI_API_KEY is missing in environment")
@@ -21,13 +21,62 @@ def _get_client():
   return _client
 
 
+# Groq Fallback Setup
+_groq_client = None
+
+def _get_groq_client():
+    global _groq_client
+    if _groq_client is not None:
+        return _groq_client
+
+    load_dotenv()
+    api_key = os.getenv("GROQ_API_KEY")
+
+    if not api_key:
+        return None
+
+    try:
+        from groq import Groq
+        _groq_client = Groq(api_key=api_key)
+        return _groq_client
+    except ImportError:
+        print("[WARNING] groq package not found. Groq fallback disabled.")
+        return None
+
+def groq_generate_content(prompt: str) -> str:
+    """Fallback call to Groq when Gemini fails."""
+    client = _get_groq_client()
+    if not client:
+        raise RuntimeError("Groq client not initialized (check GROQ_API_KEY).")
+    
+    groq_model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+    print(f"[DEBUG] groq fallback start using {groq_model}")
+    chat_completion = client.chat.completions.create(
+
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+        model=groq_model,
+        # Try to enforce json object response format if expecting JSON, but since call_gemini just returns string, we don't strictly need it.
+    )
+    return chat_completion.choices[0].message.content
+
+
 def call_gemini(prompt: str) -> str:
-  client = _get_client()
-  response = client.models.generate_content(
-      model="gemini-2.5-flash",
-      contents=prompt
-  )
-  return response.text
+  try:
+    client = _get_client()
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+    return response.text
+  except Exception as e:
+    print(f"[WARNING] Gemini generate_content failed: {e}. Falling back to Groq.")
+    return groq_generate_content(prompt)
+
 
 def interpret_intent(user_prompt: str) -> dict:
     """
@@ -111,15 +160,36 @@ RULES:
 '''
    )
     
-    client = _get_client()
-
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=f"{system_instruction}\nUser Prompt: {user_prompt}"
-    )
+    full_prompt = f"{system_instruction}\nUser Prompt: {user_prompt}"
+    
+    try:
+        client = _get_client()
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=full_prompt
+        )
+        raw_text = response.text
+    except Exception as e:
+        print(f"[WARNING] Gemini interpret_intent failed: {e}. Falling back to Groq.")
+        groq_client = _get_groq_client()
+        if groq_client:
+            print("[DEBUG] groq interpret_intent fallback start")
+            chat_completion = groq_client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": full_prompt,
+                    }
+                ],
+                model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+                response_format={"type": "json_object"},
+            )
+            raw_text = chat_completion.choices[0].message.content
+        else:
+            raise RuntimeError("Groq client not initialized for fallback.")
 
     raw_text = (
-        response.text
+        raw_text
         .replace("```json", "")
         .replace("```", "")
         .strip()
@@ -128,6 +198,6 @@ RULES:
     try:
         parsed = json.loads(raw_text)
     except json.JSONDecodeError as e:
-        raise ValueError(f"Gemini returned invalid JSON:\n{raw_text}") from e
+        raise ValueError(f"LLM returned invalid JSON:\n{raw_text}") from e
 
     return parsed

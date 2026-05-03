@@ -177,9 +177,10 @@ def gemini_calendar_batch_priority(signals):
 
     results = {item.id: item.model_dump() for item in items}
     print("[DEBUG] cal llm end")    
+    
     return results
 
-def gemini_gmail_batch_priority(signals):
+def gemini_gmail_batch_priority(signals, keywords: list | None = None):
     print("[DEBUG] gmail llm start")
     emails = []
 
@@ -194,13 +195,21 @@ def gemini_gmail_batch_priority(signals):
             "time": str(s.timestamp),
         })
 
+    # Build keyword hint line for the prompt
+    keyword_hint = ""
+    if keywords:
+        kw_list = ", ".join(f"'{k}'" for k in keywords)
+        keyword_hint = f"""\n    User-defined priority keywords (boost emails containing these):
+    {kw_list}\n"""
+
     prompt = f"""
     You are prioritizing emails for a personal assistant.
     The goal is to determine which emails require immediate attention today.
-
+{keyword_hint}
     Key reasoning principles:
     • Action-oriented emails (requests for approval, meeting coordination, urgent questions) are higher priority.
     • VIP senders (executives, direct reports, key clients) are higher priority.
+    • Emails whose subject or body contain any of the user-defined priority keywords above should receive a significantly higher score.
     • Informational emails (newsletters, status updates without action, generic announcements) are lower priority.
     • Personal emails or social notifications are lower priority.
 
