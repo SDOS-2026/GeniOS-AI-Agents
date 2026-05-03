@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import time
+import os
 
 # Gateway Configuration
 # GATEWAY_URL = "http://localhost:8000"
