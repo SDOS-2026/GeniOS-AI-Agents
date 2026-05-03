@@ -8,10 +8,13 @@ class Recipients(TypedDict):
 
 class EmailAgentState(TypedDict):
     # ===== Session / Control =====
-    thread_id: str
+    # thread_id removed — lives in LangGraph config, not state
     reply_message_id: Optional[str]
-    mode: Optional[Literal["CATEGORIZE", "COMPOSE"]]
+    mode: Optional[Literal["CHECK_INBOX", "REPLY", "COMPOSE"]]
     user_prompt: Optional[str]
+
+    # ===== Interrupt Signalling =====
+    interrupt_type: Optional[Literal["inbox_review", "summarize_ack", "draft_review"]]
 
     # ===== Inbox Data =====
     emails: Optional[List[Dict]]          # filtered email list

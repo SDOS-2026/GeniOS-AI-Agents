@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from app.llm.gemini import client
+from app.llm.gemini import _get_client
 from google.genai import types
 
 load_dotenv()
@@ -14,6 +14,7 @@ def embed_text(text: str) -> list[float]:
     if not text or not text.strip():
         raise ValueError("Cannot embed empty text")
 
+    client = _get_client()
     response = client.models.embed_content(
         model="gemini-embedding-001",
         contents=text,
@@ -23,7 +24,6 @@ def embed_text(text: str) -> list[float]:
         )
     )
 
-    # ✅ Correct for your SDK version
     embedding = response.embeddings[0].values
     
     # Verify we got the expected dimension
