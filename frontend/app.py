@@ -3,7 +3,11 @@ import requests
 import time
 
 # Gateway Configuration
-GATEWAY_URL = "http://localhost:8000"
+# GATEWAY_URL = "http://localhost:8000"
+GATEWAY_URL = os.getenv(
+    "GATEWAY_URL",
+    "http://localhost:8000"
+)
 DAA_RUN_URL = f"{GATEWAY_URL}/daa/run"
 DAA_STATUS_URL = f"{GATEWAY_URL}/daa/status/{{run_id}}"
 
