@@ -23,7 +23,7 @@ def test_read_root(client):
     assert response.status_code == 200
     assert "Daily Attention Agent service is running" in response.json()["message"]
 
-def test_agent_run_endpoint_basic():
+def test_agent_run_endpoint_basic(client):
     # Test that the POST endpoint returns a run_id immediately
     payload = {
         "user_id": "test_user",

@@ -89,15 +89,21 @@ To run the full GeniOS stack, start the services in separate terminals:
 bash mcp_server/start.sh
 
 # Terminal 2: DAA Service (Logic)
-cd daily_attention_agent && bash uvicorn_start.sh
+bash daily_attention_agent/uvicorn_start.sh
 
-# Terminal 3: Gateway (Unified API)
+# Terminal 3: EmailAgent Service
+bash EmailAgent/uvicorn_start.sh
+
+# Terminal 4: Gateway (Unified API)
 bash gateway/start.sh
 
 # Terminal 4: Frontend (UI)
 bash frontend/start.sh
 ```
-
+### 4. Run Tests
+```bash
+bash run_tests.sh
+```
 ---
 
 ## 🎯 Upcoming Milestones

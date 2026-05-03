@@ -23,8 +23,8 @@ def test_app_renders_successfully(app):
     assert app.sidebar.text_area[0].label == "VIP Senders (comma separated)"
     assert app.sidebar.text_area[1].label == "Keywords (comma separated)"
 
-@patch('app.requests.post')
-@patch('app.requests.get')
+@patch('requests.post')
+@patch('requests.get')
 def test_successful_run_flow(mock_get, mock_post):
     """Test the UI when pushing the run agent button and getting a successful response."""
     # Mocking the POST request to start the run
@@ -73,7 +73,7 @@ def test_successful_run_flow(mock_get, mock_post):
     assert "💡 Opportunities" in subheaders
     assert app.info[1].value == "- **Upsell**: Offer premium support"
 
-@patch('app.requests.post')
+@patch('requests.post')
 def test_failed_run_flow(mock_post):
     """Test the UI handles a failure from the Gateway properly."""
     # Mock a server failure
