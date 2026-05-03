@@ -1,5 +1,6 @@
 import re
 from app.llm.router import call_llm
+from langgraph.types import interrupt
 
 
 def _fallback_summary(thread: dict) -> str:
@@ -51,8 +52,11 @@ Email thread:
     if not summary:
         summary = _fallback_summary(thread)
 
-    print(f"\n=== SUMMARY OF SELECTED EMAIL ===\n{summary}\n=================================\n")
-    input("Press Enter to return to inbox...") # Pause so user can read
+    # Interrupt — let the frontend display the summary and acknowledge
+    interrupt({
+        "interrupt_type": "summarize_ack",
+        "summary": summary,
+    })
+    # resume value is ignored — any response continues the graph
 
-    state["summary"] = summary
-    return state
+    return {"summary": summary, "interrupt_type": "summarize_ack"}

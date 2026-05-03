@@ -1,65 +1,49 @@
-from app.utils.reasoning import add_reasoning
+from langgraph.types import interrupt
+
 
 def review_node(state):
     """
-    Interactively asks the user to review the draft.
-    Returns the state with 'user_action' set to SEND, EDIT, or CANCEL.
+    Presents the draft for review via an interrupt.
+    The frontend renders the draft and collects the user's decision:
+    Send, Edit (with instructions), or Cancel.
     """
-    assert isinstance(state["recipient"]["to"], list), \
-        "Invariant violated: recipient.to must be a list"
     recipients = state["recipient"]
     subject = state.get("subject") or "No Subject"
     draft = state.get("draft", "")
-    attachments = state.get("attachments") or []
+    reasoning = state.get("reasoning", [])
 
-    def join(lst):
-        return ", ".join(lst) if lst else "—"
+    # Interrupt — let the frontend display the draft and collect decision
+    resume = interrupt({
+        "interrupt_type": "draft_review",
+        "draft": {
+            "to": recipients.get("to", []),
+            "cc": recipients.get("cc", []),
+            "bcc": recipients.get("bcc", []),
+            "subject": subject,
+            "body": draft,
+        },
+        "reasoning": reasoning,
+    })
+    # resume = {"decision": "SEND"} | {"decision": "EDIT", "edit_instructions": "..."} | {"decision": "CANCEL"}
 
-    add_reasoning(state, "Presenting the current draft for your review.")
+    decision = resume.get("decision", "CANCEL")
 
-    if state.get("show_reasoning"):
-        print("\n--- REASONING ---")
-    for line in state.get("reasoning", []):
-        print(f"- {line}")
-    print("-----------------\n")
-
-
-    print("\n--- DRAFT REVIEW ---")
-    print(f"To:  {join(recipients.get('to', []))}")
-    print(f"CC:  {join(recipients.get('cc', []))}")
-    print(f"BCC: {join(recipients.get('bcc', []))}")
-    print(f"Subject: {subject}")
-    if attachments:
-        print("Attachments:")
-        for a in attachments:
-            print(f" - {a}")
-    print("-" * 20)
-    print(draft)
-    print("-" * 20)
-
-
-
-    while True:
-        choice = input("\n[S]end / [E]dit / [C]ancel: ").strip().lower()
-
-        if choice in ["s", "send"]:
-            state["user_action"] = "SEND"
-            state["approval_status"] = "APPROVED"
-            break
-        
-        elif choice in ["e", "edit"]:
-            state["user_action"] = "EDIT"
-            state["approval_status"] = "REJECTED"
-            instructions = input("What changes would you like? ")
-            state["edit_instructions"] = instructions
-            # print (state["edit_instructions"])
-            break
-
-        elif choice in ["c", "cancel"]:
-            state["user_action"] = "CANCEL"
-            break
-            
-        else:
-            print("Invalid choice. Please type S, E, or C.")
-
-    return state
+    if decision == "SEND":
+        return {
+            "interrupt_type": "draft_review",
+            "user_action": "SEND",
+            "approval_decision": "YES",
+        }
+    elif decision == "EDIT":
+        return {
+            "interrupt_type": "draft_review",
+            "user_action": "EDIT",
+            "approval_decision": "NO",
+            "edit_instructions": resume.get("edit_instructions", ""),
+        }
+    else:  # CANCEL
+        return {
+            "interrupt_type": "draft_review",
+            "user_action": "CANCEL",
+            "approval_decision": "NO",
+        }
