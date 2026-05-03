@@ -9,7 +9,7 @@ Routes:
 import logging
 from fastapi import FastAPI, Request, Response
 import httpx
-
+import os
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
@@ -18,10 +18,9 @@ app = FastAPI(
 )
 
 SERVICE_MAP = {
-    "daa": "http://localhost:8001",
-    "email": "http://localhost:8002",
+    "daa": os.getenv("DAA_SERVICE_URL", "http://localhost:8001"),
+    "email": os.getenv("EMAIL_SERVICE_URL", "http://localhost:8002"),
 }
-
 
 @app.get("/")
 def read_root():
