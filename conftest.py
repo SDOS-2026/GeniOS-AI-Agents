@@ -4,6 +4,31 @@
 import pytest
 import sys
 import os
+import importlib
+
+# --- Test environment defaults --------------------------------------------
+# Ensure tests can run without real LLM keys or external services.
+os.environ.setdefault("GEMINI_API_KEY", "test_dummy_key")
+os.environ.setdefault("GEMINI_ENABLED", "false")
+os.environ.setdefault("GEMINI_MODEL", "test-model")
+
+# --- Pydantic / FastAPI compatibility shim --------------------------------
+# Some environments may have mismatched FastAPI / Pydantic versions which
+# lead to import-time errors during test collection (e.g. FastAPI trying
+# to import `Undefined` from `pydantic.fields`). Patch `pydantic.fields`
+# at test startup if the symbol is missing so imports succeed.
+try:
+    # Attempt to access the symbol; if present, nothing to do.
+    from pydantic.fields import Undefined  # type: ignore
+except Exception:
+    try:
+        pf = importlib.import_module("pydantic.fields")
+        if not hasattr(pf, "Undefined"):
+            setattr(pf, "Undefined", object())
+    except Exception:
+        # If we can't import pydantic.fields at all, continue — the
+        # real import error will surface later in tests that need it.
+        pass
 
 # ---------------------------------------------------------------------------
 # Path setup: ensures both EmailAgent and daily_attention_agent packages

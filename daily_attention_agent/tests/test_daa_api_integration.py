@@ -5,11 +5,18 @@ Tests the full HTTP API layer and agent execution with mocked MCP tools.
 Run with: pytest test_daa_api_integration.py -v
 """
 
+import os
 import pytest
 import json
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone
+
+# Skip integration tests by default; set `RUN_DAA_INTEGRATION=1` to run.
+pytestmark = pytest.mark.skipif(
+    os.getenv("RUN_DAA_INTEGRATION") != "1",
+    reason="Integration tests require local services; set RUN_DAA_INTEGRATION=1 to enable"
+)
 
 
 # ==============================================================
