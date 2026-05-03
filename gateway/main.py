@@ -2,14 +2,15 @@
 GeniOS Gateway — thin proxy that routes to backend agent services.
 
 Routes:
-  - /daa/*   → DAA service at localhost:8001
-  - /email/* → EmailAgent service at localhost:8002
+  - /daa/*   → DAA service (e.g. daa-logic.onrender.com)
+  - /email/* → EmailAgent service (e.g. mcp-server.onrender.com)
   - /        → Gateway health check
 """
 import logging
 from fastapi import FastAPI, Request, Response
 import httpx
 import os
+
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
@@ -29,7 +30,6 @@ def read_root():
         "services": list(SERVICE_MAP.keys()),
     }
 
-
 @app.api_route("/{service}/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def proxy(service: str, path: str, request: Request):
     """Forward requests to the appropriate backend service."""
@@ -43,14 +43,35 @@ async def proxy(service: str, path: str, request: Request):
 
     async with httpx.AsyncClient() as client:
         url = f"{backend}/{path}"
-        response = await client.request(
-            method=request.method,
-            url=url,
-            headers={k: v for k, v in request.headers.items() if k.lower() != "host"},
-            content=await request.body(),
-            params=request.query_params,
-            timeout=60.0,
-        )
+        
+        try:
+            # Increased timeout to 120s to account for heavy Gemini/Gmail processing
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers={k: v for k, v in request.headers.items() if k.lower() != "host"},
+                content=await request.body(),
+                params=request.query_params,
+                timeout=120.0,
+            )
+        except httpx.ReadTimeout:
+            return Response(
+                content='{"error": "Backend timeout - DAA processing took too long"}',
+                status_code=504,
+                media_type="application/json"
+            )
+        except httpx.ConnectError:
+            return Response(
+                content='{"error": "Backend unreachable - service might be down or sleeping"}',
+                status_code=503,
+                media_type="application/json"
+            )
+        except Exception as e:
+            return Response(
+                content=f'{{"error": "Gateway Proxy Error: {str(e)}"}}',
+                status_code=500,
+                media_type="application/json"
+            )
 
     # Filter out hop-by-hop headers
     excluded_headers = {"transfer-encoding", "content-encoding", "content-length"}

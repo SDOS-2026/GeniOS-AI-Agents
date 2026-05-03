@@ -12,4 +12,6 @@ fi
 # 3. Tell the Python app to use the writable copy
 export GOOGLE_TOKEN_PATH=/opt/render/project/src/token.json
 
-exec uvicorn mcp_server.main:app --host 0.0.0.0 --port 9000
+# exec uvicorn mcp_server.main:app --host 0.0.0.0 --port 9000
+
+exec uvicorn mcp_server.main:app --host 0.0.0.0 --port 9000 --timeout-keep-alive 120 --workers 1
