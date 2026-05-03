@@ -1,11 +1,11 @@
 # app/connectors/normalize.py
 
 from typing import List
-from app.core.state import DAAState
-from app.models.unified_signal import UnifiedSignal
+from daily_attention_agent.app.core.state import DAAState
+from daily_attention_agent.app.models.unified_signal import UnifiedSignal
 
-from app.connectors.gmail.normalize import normalize_gmail_threads
-from app.connectors.calendar.normalize import normalize_calendar_events
+from daily_attention_agent.app.connectors.gmail.normalize import normalize_gmail_threads
+from daily_attention_agent.app.connectors.calendar.normalize import normalize_calendar_events
 
 
 def normalize_signals(state: DAAState) -> DAAState:

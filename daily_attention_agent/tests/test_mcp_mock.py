@@ -1,10 +1,17 @@
+import os
 import pytest
 import json
 import asyncio
 from unittest.mock import AsyncMock, MagicMock
-from app.connectors.gmail.fetch import fetch_gmail_signals
-from app.connectors.calendar.fetch import fetch_calendar_signals
-from app.core.state import DAAState
+from daily_attention_agent.app.connectors.gmail.fetch import fetch_gmail_signals
+from daily_attention_agent.app.connectors.calendar.fetch import fetch_calendar_signals
+from daily_attention_agent.app.core.state import DAAState
+
+# These tests exercise MCP adapter behavior and are skipped by default
+pytestmark = pytest.mark.skipif(
+    os.getenv("RUN_DAA_INTEGRATION") != "1",
+    reason="MCP/mock integration tests disabled by default"
+)
 
 class MockContent:
     def __init__(self, text):

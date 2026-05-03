@@ -1,10 +1,17 @@
 import os
 import pytest
 import asyncio
-from app.connectors.gmail.fetch import fetch_gmail_signals
-from app.connectors.calendar.fetch import fetch_calendar_signals
-from app.core.state import DAAState
-from app.services.mcp_client import MCPHttpAdapter
+
+# Skip long-running external integration tests by default. To run them set:
+# RUN_DAA_INTEGRATION=1 and provide MCP_SERVER_URL or other service endpoints.
+pytestmark = pytest.mark.skipif(
+    os.getenv("RUN_DAA_INTEGRATION") != "1",
+    reason="External integration tests disabled by default"
+)
+from daily_attention_agent.app.connectors.gmail.fetch import fetch_gmail_signals
+from daily_attention_agent.app.connectors.calendar.fetch import fetch_calendar_signals
+from daily_attention_agent.app.core.state import DAAState
+from daily_attention_agent.app.services.mcp_client import MCPHttpAdapter
 from dotenv import load_dotenv
 
 load_dotenv()

@@ -1,6 +1,6 @@
 # app/guardrails/cost_caps.py
 
-from app.core.state import DAAState
+from daily_attention_agent.app.core.state import DAAState
 
 
 MAX_ATTENTION_ITEMS = 15

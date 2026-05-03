@@ -1,8 +1,8 @@
 import logging
 from fastapi import FastAPI
 
-from app.services.mcp_client import lifespan
-from app.api.routers import agent
+from daily_attention_agent.app.services.mcp_client import lifespan
+from daily_attention_agent.app.api.routers import agent
 
 # Set up simple logging
 logging.basicConfig(level=logging.INFO)

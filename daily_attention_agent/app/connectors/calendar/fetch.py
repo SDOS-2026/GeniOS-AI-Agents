@@ -3,8 +3,8 @@
 from typing import List, Dict, Any
 from datetime import datetime, timedelta, timezone
 
-from app.core.state import DAAState
-from app.core.state import DAAState
+from daily_attention_agent.app.core.state import DAAState
+from daily_attention_agent.app.core.state import DAAState
 import asyncio
 import json
 

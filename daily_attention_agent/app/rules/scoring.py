@@ -2,9 +2,9 @@
 
 from typing import List, Dict, Any
 
-from app.models.unified_signal import UnifiedSignal
-from app.rules.email_rules import apply_email_rules, apply_email_batch
-from app.rules.calendar_rules import apply_calendar_batch
+from daily_attention_agent.app.models.unified_signal import UnifiedSignal
+from daily_attention_agent.app.rules.email_rules import apply_email_rules, apply_email_batch
+from daily_attention_agent.app.rules.calendar_rules import apply_calendar_batch
 
 
 def priority_level_from_score(score: float) -> str:

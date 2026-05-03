@@ -1,8 +1,8 @@
 from typing import List, Tuple
 from datetime import datetime, timezone
 from collections import defaultdict
-from app.models.unified_signal import UnifiedSignal
-from app.llm.client import gemini_calendar_batch_priority
+from daily_attention_agent.app.models.unified_signal import UnifiedSignal
+from daily_attention_agent.app.llm.client import gemini_calendar_batch_priority
 from datetime import timedelta
 
 

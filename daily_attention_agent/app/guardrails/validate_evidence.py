@@ -1,6 +1,6 @@
 # app/guardrails/validate_evidence.py
 
-from app.core.state import DAAState
+from daily_attention_agent.app.core.state import DAAState
 
 
 def validate_evidence(state: DAAState) -> None:
