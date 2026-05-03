@@ -1,7 +1,6 @@
 #!/bin/bash
-# 1. Stay in the project root
-# 2. Tell Python where the root is
-export PYTHONPATH=$PYTHONPATH:.
+# Force the Python path to the absolute root of the Render project
+export PYTHONPATH=/opt/render/project/src
 
-# 3. Use the dot-notation to start the app
+# Run uvicorn using the full package path
 exec uvicorn mcp_server.main:app --host 0.0.0.0 --port 9000
