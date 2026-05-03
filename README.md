@@ -39,6 +39,7 @@ Your read-only Executive Assistant for a focused start to the day.
 
 | Component | Technology |
 | :--- | :--- |
+| **Frontend** | Streamlit (Python UI) |
 | **LLMs** | Gemini 2.5 Flash, Gemini 1.5 Pro |
 | **Orchestration** | LangGraph (Stateful Workflows) |
 | **Gateway** | FastAPI + httpx (Proxying & Routing) |
@@ -52,6 +53,7 @@ Your read-only Executive Assistant for a focused start to the day.
 
 ```text
 .
+├── frontend/                 # Streamlit UI (Port 8501)
 ├── gateway/                  # Unified Entry Point (Port 8000)
 ├── daily_attention_agent/    # DAA Logic Service (Port 8001)
 ├── mcp_server/               # Self-Hosted Tool Server (Port 9000)
@@ -91,6 +93,9 @@ cd daily_attention_agent && bash uvicorn_start.sh
 
 # Terminal 3: Gateway (Unified API)
 bash gateway/start.sh
+
+# Terminal 4: Frontend (UI)
+bash frontend/start.sh
 ```
 
 ---

@@ -8,7 +8,7 @@ from app.core.state import DAAState
 import asyncio
 import json
 
-MAX_THREADS = 50
+MAX_THREADS = 20
 
 async def fetch_gmail_signals(state: DAAState) -> List[Dict[str, Any]]:
     """
