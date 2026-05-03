@@ -3,7 +3,9 @@ import requests
 import time
 import json
 from datetime import datetime
-
+import os
+from dotenv import load_dotenv
+load_dotenv()
 # Gateway Configuration
 GATEWAY_URL = "http://localhost:8000"
 DAA_RUN_URL = f"{GATEWAY_URL}/daa/run"
@@ -44,17 +46,17 @@ def render_feedback_section():
             if submitted:
                 # --- Supabase Configuration ---
                 # Replace these with your actual Supabase project URL and Anon Key
-                SUPABASE_URL = "https://nklvdwywvabddoemmadh.supabase.co/rest/v1/feedback"
-                SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5rbHZkd3l3dmFiZGRvZW1tYWRoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxNDMwNTYsImV4cCI6MjA4NDcxOTA1Nn0.Q7BBC9j_P3SzGll2q6wZMWef05_xpDqAY9jGWKYkmz0"
-                
+                SUPABASE_URL = os.getenv("SUPABASE_URL")
+                SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+
                 payload = {
                     "rating": rating,
                     "comments": comments.strip()
                 }
                 
                 # Prevent sending if placeholders are not updated
-                if not SUPABASE_URL or "YOUR_PROJECT_REF" in SUPABASE_URL:
-                    st.warning("Feedback not sent: Supabase credentials are not configured yet. Please update app.py.")
+                if not SUPABASE_URL or not SUPABASE_ANON_KEY:
+                    st.warning("Feedback not sent: Supabase credentials are missing in .env file.")
                 else:
                     headers = {
                         "apikey": SUPABASE_ANON_KEY,
